@@ -37,12 +37,20 @@ const operationSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["draft", "ready", "done", "cancelled"],
+      enum: ["draft", "ready", "waiting", "done", "cancelled"],
       default: "draft",
     },
     responsible: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
+      type: String,
+      trim: true,
+    },
+    deliveryAddress: {
+      type: String,
+      trim: true,
+    },
+    receiveFrom: {
+      type: String,
+      trim: true,
     },
     sourceLocation: {
       type: Schema.Types.ObjectId,
@@ -66,6 +74,11 @@ const operationSchema = new Schema(
   }
 );
 
-const Operation = mongoose.models?.Operation || mongoose.model("Operation", operationSchema);
+// Delete cached model to ensure schema updates are applied
+if (mongoose.models?.Operation) {
+  delete mongoose.models.Operation;
+}
+
+const Operation = mongoose.model("Operation", operationSchema);
 
 export default Operation;

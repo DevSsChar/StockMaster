@@ -227,6 +227,37 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
     }
   };
 
+  const handleSaveChanges = async () => {
+    if (!operationId) return;
+    
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/receipts/${operationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: status.toLowerCase(),
+          formData,
+          products,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || 'Failed to update receipt');
+      } else {
+        alert('Changes saved successfully!');
+      }
+    } catch (err) {
+      console.error('Error updating receipt:', err);
+      setError('Failed to save changes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Check if user is manager
   const isManager = session?.user?.role === 'manager';
 
@@ -319,13 +350,25 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
 
         {/* Action Buttons */}
         <div className="flex gap-3">
+          {/* Save Changes button - visible in edit mode */}
+          {operationId && isEditMode && (
+            <button
+              onClick={handleSaveChanges}
+              disabled={loading}
+              className="px-6 py-2 rounded border border-blue-700 text-white bg-blue-900/30 hover:bg-blue-900/50 transition font-semibold disabled:opacity-50"
+            >
+              {loading ? 'Saving...' : 'Save Changes'}
+            </button>
+          )}
+
           {/* TO DO button - only visible when status is Draft */}
           {status === 'Draft' && (
             <button
               onClick={handleToDo}
-              className="px-6 py-2 rounded border border-red-700 text-white bg-red-900/30 hover:bg-red-900/50 transition font-semibold"
+              disabled={loading}
+              className="px-6 py-2 rounded border border-red-700 text-white bg-red-900/30 hover:bg-red-900/50 transition font-semibold disabled:opacity-50"
             >
-              TO DO
+              {loading ? 'Updating...' : 'TO DO'}
             </button>
           )}
           
@@ -333,9 +376,10 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
           {status === 'Ready' && (
             <button
               onClick={handleValidate}
-              className="px-6 py-2 rounded border border-red-700 text-white bg-green-900/30 hover:bg-green-900/50 transition font-semibold"
+              disabled={loading}
+              className="px-6 py-2 rounded border border-red-700 text-white bg-green-900/30 hover:bg-green-900/50 transition font-semibold disabled:opacity-50"
             >
-              Validate
+              {loading ? 'Validating...' : 'Validate'}
             </button>
           )}
           
