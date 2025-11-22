@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
+      required: false, // Optional - OAuth users won't have password
       select: false, // Don't return password by default in queries
     },
     image: {
@@ -44,21 +45,6 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password') || !this.password) {
-    return next();
-  }
-  
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
 
 // Method to compare password
 userSchema.methods.comparePassword = async function(candidatePassword) {

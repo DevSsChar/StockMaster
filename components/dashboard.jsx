@@ -16,8 +16,8 @@ export default function Dashboard() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-text-primary)]"></div>
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-700"></div>
       </div>
     );
   }
@@ -26,37 +26,59 @@ export default function Dashboard() {
     return null;
   }
 
+  // Static data
+  const receiptData = {
+    title: "Receipt",
+    toDeliver: 4,
+    late: 1,
+    operations: 6,
+    items: [
+      { name: "Speedy Koala", color: "bg-green-600" },
+      { name: "Grignard", color: "bg-amber-700" },
+    ]
+  };
+
+  const deliveryData = {
+    title: "Delivery",
+    toDeliver: 1,
+    late: 1,
+    waiting: 2,
+    operations: 6,
+    // items: [
+    //   { name: "Attractive Reindeer", color: "bg-purple-600", late: 1, operations: 6 },
+    //   { name: "Squiggly Duck", color: "bg-indigo-600" },
+    // ]
+  };
+
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
-      {/* Header */}
-      <header className="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Dashboard</h1>
-            </div>
+    <div className="h-screen w-screen flex flex-col bg-[#f5f5f7] overflow-hidden">
+      {/* Compact Header */}
+      <header className="bg-[#2c2c2c] border-b border-gray-700">
+        <div className="max-w-full px-8">
+          <div className="flex justify-between items-center py-4">
+            <h1 className="text-xl font-bold text-white">Dashboard</h1>
             
             <div className="flex items-center space-x-4">
               {session?.user?.image && (
                 <Image
                   src={session.user.image}
                   alt="Profile"
-                  width={40}
-                  height={40}
+                  width={32}
+                  height={32}
                   className="rounded-full"
                 />
               )}
-              <div className="text-right">
-                <p className="text-sm font-medium text-[var(--color-text-primary)]">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-medium text-white">
                   {session?.user?.name || "User"}
                 </p>
-                <p className="text-xs text-[var(--color-text-secondary)]">
+                <p className="text-xs text-gray-400">
                   {session?.user?.email}
                 </p>
               </div>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200"
+                className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200"
               >
                 Sign Out
               </button>
@@ -65,94 +87,104 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Welcome Section */}
-          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
-              Welcome back, {session?.user?.name?.split(' ')[0] || 'User'}! 👋
-            </h2>
-            <p className="text-[var(--color-text-secondary)]">
-              You're successfully logged in to your dashboard.
-            </p>
+      {/* Main Content - Full Page with Two Cards */}
+      <main className="flex-1 w-full px-8 py-8 overflow-auto">
+        <div className="max-w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* Receipt Card */}
+          <div className="bg-white border-2 border-red-500/50 rounded-3xl p-12 flex flex-col shadow-md" style={{height: '50vh'}}>
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-3xl font-bold text-red-600 mb-6">{receiptData.title}</h2>
+                <div className="bg-red-100 text-red-700 px-8 py-3 rounded-2xl text-lg font-bold border-2 border-red-300 inline-block">
+                  {receiptData.toDeliver} to receive
+                </div>
+              </div>
+              
+              {/* Right Side - Stats */}
+              <div className="text-right text-xl space-y-3">
+                <div className="text-gray-700">
+                  <span className="text-red-600 font-bold text-2xl">{receiptData.late}</span> <span className="font-semibold">Late</span>
+                </div>
+                <div className="text-gray-700">
+                  <span className="text-amber-600 font-bold text-2xl">{receiptData.waiting || 2}</span> <span className="font-semibold">waiting</span>
+                </div>
+                <div className="text-gray-700">
+                  <span className="text-gray-900 font-bold text-2xl">{receiptData.operations}</span> <span className="font-semibold">operations</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Items List
+            <div className="space-y-4 flex-1">
+              {receiptData.items.map((item, index) => (
+                <div 
+                  key={index}
+                  className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-5 hover:border-red-300 hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-4 h-4 ${item.color} rounded-full`}></div>
+                    <span className="text-gray-800 font-semibold text-base">{item.name}</span>
+                  </div>
+                </div>
+              ))}
+            </div> */}
+
+            {/* <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-xs text-gray-500 flex items-center">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                ks04
+              </p>
+            </div> */}
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
+          {/* Delivery Card */}
+          <div className="bg-white border-2 border-red-500/50 rounded-3xl p-12 flex flex-col shadow-md" style={{height: '50vh'}}>
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-3xl font-bold text-red-600 mb-6">{deliveryData.title}</h2>
+                <div className="bg-red-100 text-red-700 px-8 py-3 rounded-2xl text-lg font-bold border-2 border-red-300 inline-block">
+                  {deliveryData.toDeliver} to deliver
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">Total Users</p>
-                  <p className="text-2xl font-semibold text-[var(--color-text-primary)]">1,234</p>
+              </div>
+              
+              {/* Right Side - Stats */}
+              <div className="text-right text-xl space-y-3">
+                <div className="text-gray-700">
+                  <span className="text-red-600 font-bold text-2xl">{deliveryData.late}</span> <span className="font-semibold">Late</span>
+                </div>
+                <div className="text-gray-700">
+                  <span className="text-amber-600 font-bold text-2xl">{deliveryData.waiting}</span> <span className="font-semibold">waiting</span>
+                </div>
+                <div className="text-gray-700">
+                  <span className="text-gray-900 font-bold text-2xl">{deliveryData.operations}</span> <span className="font-semibold">operations</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
+            {/* Items List
+            <div className="space-y-4 flex-1">
+              {deliveryData.items.map((item, index) => (
+                <div 
+                  key={index}
+                  className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-5 hover:border-red-300 hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-4 h-4 ${item.color} rounded-full`}></div>
+                    <span className="text-gray-800 font-semibold text-base">{item.name}</span>
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">Revenue</p>
-                  <p className="text-2xl font-semibold text-[var(--color-text-primary)]">$45,231</p>
-                </div>
-              </div>
-            </div>
+              ))}
+            </div> */}
 
-            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">Active Projects</p>
-                  <p className="text-2xl font-semibold text-[var(--color-text-primary)]">42</p>
-                </div>
-              </div>
-            </div>
+            {/* <div className="mt-46 pt-6 border-t border-gray-200">
+              <p className="text-xs text-gray-500 flex items-center">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                Aqib A
+              </p>
+            </div> */}
           </div>
 
-          {/* Recent Activity */}
-          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
-            <div className="px-6 py-4 border-b border-[var(--color-border)]">
-              <h3 className="text-lg font-medium text-[var(--color-text-primary)]">Recent Activity</h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                {[
-                  { action: "User logged in", time: "2 minutes ago", icon: "👤" },
-                  { action: "New project created", time: "1 hour ago", icon: "🚀" },
-                  { action: "Database backup completed", time: "3 hours ago", icon: "💾" },
-                  { action: "System update installed", time: "1 day ago", icon: "⚙️" },
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <span className="text-lg">{activity.icon}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-[var(--color-text-primary)]">{activity.action}</p>
-                      <p className="text-xs text-[var(--color-text-secondary)]">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </main>
     </div>

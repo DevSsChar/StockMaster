@@ -321,3 +321,84 @@ export async function deleteUser(id) {
     return { error: "Failed to delete user" };
   }
 }
+
+export async function signupUser({ email, password, name }) {
+  try {
+    if (!email || !password || !name) {
+      return { error: "All fields are required" };
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    await connectDB();
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return { error: "User already exists with this email" };
+    }
+
+    // Create new user
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await User.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: "staff", // Default role
+      provider: "credentials",
+    });
+
+    return { success: true, message: "Account created successfully! Please login." };
+  } catch (error) {
+    console.error("signupUser error", error);
+    return { error: "Failed to create account. Please try again." };
+  }
+}
+
+
+export async function loginUser({ email, password }) {
+  try {
+    if (!email || !password) {
+      return { error: "Email and password are required" };
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    await connectDB();
+
+    // Find user and explicitly select password field
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
+    if (!user) {
+      return { error: "Invalid email or password" };
+    }
+
+    // Check if user has a password (OAuth users might not have one)
+    if (!user.password) {
+      return { error: "This account uses social login. Please sign in with Google or GitHub." };
+    }
+
+    // Verify password
+    const bcrypt = require('bcryptjs');
+    console.log('Login attempt:', { email: normalizedEmail, hasPassword: !!user.password });
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('Password valid:', isPasswordValid);
+    if (!isPasswordValid) {
+      return { error: "Invalid email or password" };
+    }
+
+    return { 
+      success: true, 
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
+    };
+  } catch (error) {
+    console.error("loginUser error", error);
+    return { error: "Login failed. Please try again." };
+  }
+}
