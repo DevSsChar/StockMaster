@@ -53,7 +53,7 @@ export default function Dashboard() {
   return (
     <div className="h-screen w-screen flex flex-col bg-[#f5f5f7] overflow-hidden">
       {/* Compact Header */}
-      <header className="bg-[#2c2c2c] border-b border-gray-700">
+      {/* <header className="bg-[#2c2c2c] border-b border-gray-700">
         <div className="max-w-full px-8">
           <div className="flex justify-between items-center py-4">
             <h1 className="text-xl font-bold text-white">Dashboard</h1>
@@ -85,10 +85,10 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </header>
+      </header> */}
 
       {/* Main Content - Full Page with Two Cards */}
-      <main className="flex-1 w-full px-8 py-8 overflow-auto">
+      <main className="flex-1 w-full px-8 py-20 overflow-auto">
         <div className="max-w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* Receipt Card */}
@@ -123,7 +123,7 @@ export default function Dashboard() {
                   className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-5 hover:border-red-300 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className={`w-4 h-4 ${item.color} rounded-full`}></div>
+                    <div className={w-4 h-4 ${item.color} rounded-full}></div>
                     <span className="text-gray-800 font-semibold text-base">{item.name}</span>
                   </div>
                 </div>
@@ -170,7 +170,7 @@ export default function Dashboard() {
                   className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-5 hover:border-red-300 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className={`w-4 h-4 ${item.color} rounded-full`}></div>
+                    <div className={w-4 h-4 ${item.color} rounded-full}></div>
                     <span className="text-gray-800 font-semibold text-base">{item.name}</span>
                   </div>
                 </div>
