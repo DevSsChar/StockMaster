@@ -7,10 +7,10 @@ const locationSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    type: {
-      type: String,
-      enum: ["internal", "vendor", "customer", "inventory_loss"],
-      default: "internal",
+    warehouse: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Warehouse",
+      required: true,
     },
     address: {
       type: String,

@@ -5,6 +5,7 @@ import connectDB from "@/db/connectDB.mjs";
 import Product from "@/models/Product";
 import Location from "@/models/Location";
 import Warehouse from "@/models/Warehouse";
+import Operation from "@/models/Operation";
 import User from "@/models/user";
 
 const serialize = (data) => JSON.parse(JSON.stringify(data));
@@ -103,7 +104,6 @@ export async function createWarehouse(formData) {
 
     await Location.create({
       name: `${upperShortCode}/Stock`,
-      type: "internal",
       warehouse: warehouse._id,
     });
 
@@ -130,7 +130,6 @@ export async function getWarehouses() {
 export async function createLocation(formData) {
   try {
     const name = getField(formData, "name")?.toString().trim();
-    const type = getField(formData, "type")?.toString().trim() || "internal";
     const address = getField(formData, "address")?.toString().trim() || undefined;
     const warehouseId = toObjectId(getField(formData, "warehouse"));
 
@@ -138,15 +137,14 @@ export async function createLocation(formData) {
       return { error: "Location name is required" };
     }
 
-    if (type === "internal" && !warehouseId) {
-      return { error: "Internal locations require a warehouse" };
+    if (!warehouseId) {
+      return { error: "Warehouse is required" };
     }
 
     await connectDB();
 
     await Location.create({
       name,
-      type,
       warehouse: warehouseId,
       address,
     });
@@ -249,11 +247,6 @@ export async function updateLocation(formData) {
       updates.name = name.trim();
     }
 
-    const type = getField(formData, "type");
-    if (typeof type === "string" && type.trim()) {
-      updates.type = type.trim();
-    }
-
     const address = getField(formData, "address");
     if (typeof address === "string") {
       updates.address = address.trim() || undefined;
@@ -269,18 +262,17 @@ export async function updateLocation(formData) {
     }
 
     await connectDB();
-    const current = await Location.findById(id).select("type warehouse");
+    const current = await Location.findById(id).select("warehouse");
     if (!current) {
       return { error: "Location not found" };
     }
 
-    const finalType = updates.type || current.type;
     const finalWarehouse = Object.prototype.hasOwnProperty.call(updates, "warehouse")
       ? updates.warehouse
       : current.warehouse;
 
-    if (finalType === "internal" && !finalWarehouse) {
-      return { error: "Internal locations require a warehouse" };
+    if (!finalWarehouse) {
+      return { error: "Warehouse is required" };
     }
 
     const updated = await Location.findByIdAndUpdate(id, updates, { new: false });
@@ -314,6 +306,111 @@ export async function archiveLocation(id) {
   } catch (error) {
     console.error("archiveLocation error", error);
     return { error: "Failed to archive location" };
+  }
+}
+
+const parseOperationLines = (input) => {
+  if (input === undefined || input === null) {
+    return [];
+  }
+
+  let rawLines = input;
+  if (typeof input === "string") {
+    if (!input.trim()) {
+      return [];
+    }
+    try {
+      rawLines = JSON.parse(input);
+    } catch (error) {
+      throw new Error("Invalid lines payload");
+    }
+  }
+
+  if (!Array.isArray(rawLines)) {
+    throw new Error("Lines payload must be an array");
+  }
+
+  return rawLines
+    .map((line) => {
+      const product = toObjectId(line?.product);
+      const quantity = parseNumber(line?.quantity);
+      if (!product || quantity <= 0) {
+        return null;
+      }
+      return { product, quantity };
+    })
+    .filter(Boolean);
+};
+
+const buildOperationReference = (type) => {
+  const prefixes = {
+    receipt: "WH/IN/",
+    delivery: "WH/OUT/",
+    internal: "WH/INT/",
+  };
+  return `${prefixes[type] || "WH/OP/"}${Date.now()}`;
+};
+
+export async function createOperation(formData) {
+  try {
+    const type = getField(formData, "type")?.toString().trim();
+    if (!type) {
+      return { error: "Operation type is required" };
+    }
+
+    const partner = getField(formData, "partner")?.toString().trim() || undefined;
+    const sourceLocation = toObjectId(getField(formData, "sourceLocation"));
+    const destLocation = toObjectId(getField(formData, "destLocation"));
+    const responsible = toObjectId(getField(formData, "responsible")) || undefined;
+
+    let lines = [];
+    try {
+      lines = parseOperationLines(getField(formData, "lines"));
+    } catch (parseError) {
+      return { error: parseError.message };
+    }
+
+    await connectDB();
+
+    await Operation.create({
+      reference: buildOperationReference(type),
+      type,
+      partner,
+      sourceLocation,
+      destLocation,
+      responsible,
+      lines,
+      status: "draft",
+    });
+
+    revalidatePath("/inventory/operations");
+    return { success: true };
+  } catch (error) {
+    console.error("createOperation error", error);
+    return { error: "Failed to create operation" };
+  }
+}
+
+export async function getOperations(typeFilter) {
+  try {
+    await connectDB();
+
+    const filter = {};
+    if (typeFilter) {
+      filter.type = typeFilter;
+    }
+
+    const operations = await Operation.find(filter)
+      .populate("sourceLocation")
+      .populate("destLocation")
+      .populate("responsible", "name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return serialize(operations);
+  } catch (error) {
+    console.error("getOperations error", error);
+    return [];
   }
 }
 

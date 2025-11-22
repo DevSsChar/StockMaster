@@ -31,10 +31,18 @@ const operationSchema = new Schema(
       enum: ["receipt", "delivery", "internal"],
       required: true,
     },
+    partner: {
+      type: String,
+      trim: true,
+    },
     status: {
       type: String,
       enum: ["draft", "ready", "done", "cancelled"],
       default: "draft",
+    },
+    responsible: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
     sourceLocation: {
       type: Schema.Types.ObjectId,
