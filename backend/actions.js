@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import connectDB from "@/db/connectDB.mjs";
 import Product from "@/models/Product";
 import Location from "@/models/Location";
+import Warehouse from "@/models/Warehouse";
+import Operation from "@/models/Operation";
 import User from "@/models/user";
 
 const serialize = (data) => JSON.parse(JSON.stringify(data));
@@ -81,21 +83,69 @@ export async function getLocations() {
   }
 }
 
+export async function createWarehouse(formData) {
+  try {
+    const name = getField(formData, "name")?.toString().trim();
+    const shortCode = getField(formData, "shortCode")?.toString().trim();
+    const address = getField(formData, "address")?.toString().trim() || undefined;
+
+    if (!name || !shortCode) {
+      return { error: "Warehouse name and short code are required" };
+    }
+
+    await connectDB();
+
+    const upperShortCode = shortCode.toUpperCase();
+    const warehouse = await Warehouse.create({
+      name,
+      shortCode: upperShortCode,
+      address,
+    });
+
+    await Location.create({
+      name: `${upperShortCode}/Stock`,
+      warehouse: warehouse._id,
+    });
+
+    revalidatePath("/inventory/warehouses");
+    revalidatePath("/inventory/locations");
+    return { success: true };
+  } catch (error) {
+    console.error("createWarehouse error", error);
+    return { error: "Failed to create warehouse" };
+  }
+}
+
+export async function getWarehouses() {
+  try {
+    await connectDB();
+    const warehouses = await Warehouse.find({}).sort({ name: 1 }).lean();
+    return serialize(warehouses);
+  } catch (error) {
+    console.error("getWarehouses error", error);
+    return [];
+  }
+}
+
 export async function createLocation(formData) {
   try {
     const name = getField(formData, "name")?.toString().trim();
-    const type = getField(formData, "type")?.toString().trim();
     const address = getField(formData, "address")?.toString().trim() || undefined;
+    const warehouseId = toObjectId(getField(formData, "warehouse"));
 
     if (!name) {
       return { error: "Location name is required" };
+    }
+
+    if (!warehouseId) {
+      return { error: "Warehouse is required" };
     }
 
     await connectDB();
 
     await Location.create({
       name,
-      type,
+      warehouse: warehouseId,
       address,
     });
 
@@ -197,14 +247,14 @@ export async function updateLocation(formData) {
       updates.name = name.trim();
     }
 
-    const type = getField(formData, "type");
-    if (typeof type === "string" && type.trim()) {
-      updates.type = type.trim();
-    }
-
     const address = getField(formData, "address");
     if (typeof address === "string") {
       updates.address = address.trim() || undefined;
+    }
+
+    const warehouseField = getField(formData, "warehouse");
+    if (warehouseField !== undefined) {
+      updates.warehouse = toObjectId(warehouseField) || undefined;
     }
 
     if (!Object.keys(updates).length) {
@@ -212,6 +262,19 @@ export async function updateLocation(formData) {
     }
 
     await connectDB();
+    const current = await Location.findById(id).select("warehouse");
+    if (!current) {
+      return { error: "Location not found" };
+    }
+
+    const finalWarehouse = Object.prototype.hasOwnProperty.call(updates, "warehouse")
+      ? updates.warehouse
+      : current.warehouse;
+
+    if (!finalWarehouse) {
+      return { error: "Warehouse is required" };
+    }
+
     const updated = await Location.findByIdAndUpdate(id, updates, { new: false });
     if (!updated) {
       return { error: "Location not found" };
@@ -243,6 +306,111 @@ export async function archiveLocation(id) {
   } catch (error) {
     console.error("archiveLocation error", error);
     return { error: "Failed to archive location" };
+  }
+}
+
+const parseOperationLines = (input) => {
+  if (input === undefined || input === null) {
+    return [];
+  }
+
+  let rawLines = input;
+  if (typeof input === "string") {
+    if (!input.trim()) {
+      return [];
+    }
+    try {
+      rawLines = JSON.parse(input);
+    } catch (error) {
+      throw new Error("Invalid lines payload");
+    }
+  }
+
+  if (!Array.isArray(rawLines)) {
+    throw new Error("Lines payload must be an array");
+  }
+
+  return rawLines
+    .map((line) => {
+      const product = toObjectId(line?.product);
+      const quantity = parseNumber(line?.quantity);
+      if (!product || quantity <= 0) {
+        return null;
+      }
+      return { product, quantity };
+    })
+    .filter(Boolean);
+};
+
+const buildOperationReference = (type) => {
+  const prefixes = {
+    receipt: "WH/IN/",
+    delivery: "WH/OUT/",
+    internal: "WH/INT/",
+  };
+  return `${prefixes[type] || "WH/OP/"}${Date.now()}`;
+};
+
+export async function createOperation(formData) {
+  try {
+    const type = getField(formData, "type")?.toString().trim();
+    if (!type) {
+      return { error: "Operation type is required" };
+    }
+
+    const partner = getField(formData, "partner")?.toString().trim() || undefined;
+    const sourceLocation = toObjectId(getField(formData, "sourceLocation"));
+    const destLocation = toObjectId(getField(formData, "destLocation"));
+    const responsible = toObjectId(getField(formData, "responsible")) || undefined;
+
+    let lines = [];
+    try {
+      lines = parseOperationLines(getField(formData, "lines"));
+    } catch (parseError) {
+      return { error: parseError.message };
+    }
+
+    await connectDB();
+
+    await Operation.create({
+      reference: buildOperationReference(type),
+      type,
+      partner,
+      sourceLocation,
+      destLocation,
+      responsible,
+      lines,
+      status: "draft",
+    });
+
+    revalidatePath("/inventory/operations");
+    return { success: true };
+  } catch (error) {
+    console.error("createOperation error", error);
+    return { error: "Failed to create operation" };
+  }
+}
+
+export async function getOperations(typeFilter) {
+  try {
+    await connectDB();
+
+    const filter = {};
+    if (typeFilter) {
+      filter.type = typeFilter;
+    }
+
+    const operations = await Operation.find(filter)
+      .populate("sourceLocation")
+      .populate("destLocation")
+      .populate("responsible", "name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return serialize(operations);
+  } catch (error) {
+    console.error("getOperations error", error);
+    return [];
   }
 }
 
@@ -321,6 +489,42 @@ export async function deleteUser(id) {
     return { error: "Failed to delete user" };
   }
 }
+export async function randomizeUserRoles() {
+  try {
+    await connectDB();
+
+    const users = await User.find({}).select("_id role");
+    if (!users.length) {
+      return { error: "No users available" };
+    }
+
+    const roles = ["manager", "staff"];
+    const operations = users
+      .map((user) => {
+        const nextRole = roles[Math.floor(Math.random() * roles.length)];
+        if (nextRole === user.role) {
+          return null;
+        }
+        return {
+          updateOne: {
+            filter: { _id: user._id },
+            update: { role: nextRole },
+          },
+        };
+      })
+      .filter(Boolean);
+
+    if (operations.length) {
+      await User.bulkWrite(operations);
+      revalidatePath("/settings/users");
+    }
+
+    return { success: true, updated: operations.length };
+  } catch (error) {
+    console.error("randomizeUserRoles error", error);
+    return { error: "Failed to randomize roles" };
+  }
+}
 
 export async function signupUser({ email, password, name }) {
   try {
@@ -332,21 +536,19 @@ export async function signupUser({ email, password, name }) {
 
     await connectDB();
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return { error: "User already exists with this email" };
     }
 
-    // Create new user
-    const bcrypt = require('bcryptjs');
+    const bcrypt = require("bcryptjs");
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await User.create({
       name: name.trim(),
       email: normalizedEmail,
       password: hashedPassword,
-      role: "staff", // Default role
+      role: "staff",
       provider: "credentials",
     });
 
@@ -356,7 +558,6 @@ export async function signupUser({ email, password, name }) {
     return { error: "Failed to create account. Please try again." };
   }
 }
-
 
 export async function loginUser({ email, password }) {
   try {
@@ -368,34 +569,29 @@ export async function loginUser({ email, password }) {
 
     await connectDB();
 
-    // Find user and explicitly select password field
-    const user = await User.findOne({ email: normalizedEmail }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select("+password");
     if (!user) {
       return { error: "Invalid email or password" };
     }
 
-    // Check if user has a password (OAuth users might not have one)
     if (!user.password) {
       return { error: "This account uses social login. Please sign in with Google or GitHub." };
     }
 
-    // Verify password
-    const bcrypt = require('bcryptjs');
-    console.log('Login attempt:', { email: normalizedEmail, hasPassword: !!user.password });
+    const bcrypt = require("bcryptjs");
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    console.log('Password valid:', isPasswordValid);
     if (!isPasswordValid) {
       return { error: "Invalid email or password" };
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       user: {
         id: user._id.toString(),
         email: user.email,
         name: user.name,
-        role: user.role
-      }
+        role: user.role,
+      },
     };
   } catch (error) {
     console.error("loginUser error", error);

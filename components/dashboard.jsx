@@ -123,7 +123,7 @@ export default function Dashboard() {
                   className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-5 hover:border-red-300 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className={`w-4 h-4 ${item.color} rounded-full`}></div>
+                    <div className={w-4 h-4 ${item.color} rounded-full}></div>
                     <span className="text-gray-800 font-semibold text-base">{item.name}</span>
                   </div>
                 </div>
@@ -170,7 +170,7 @@ export default function Dashboard() {
                   className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-5 hover:border-red-300 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className={`w-4 h-4 ${item.color} rounded-full`}></div>
+                    <div className={w-4 h-4 ${item.color} rounded-full}></div>
                     <span className="text-gray-800 font-semibold text-base">{item.name}</span>
                   </div>
                 </div>
