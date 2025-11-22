@@ -21,6 +21,11 @@ const userSchema = new mongoose.Schema(
     image: {
       type: String,
     },
+    role: {
+      type: String,
+      enum: ['manager', 'staff'],
+      default: 'staff',
+    },
     provider: {
       type: String,
       enum: ['credentials', 'google', 'github'],
