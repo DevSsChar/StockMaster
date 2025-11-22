@@ -7,6 +7,12 @@ const locationSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    shortCode: {
+      type: String,
+      required: true,
+      trim: true,
+      uppercase: true,
+    },
     warehouse: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Warehouse",

@@ -6,6 +6,7 @@ import Product from "@/models/Product";
 import Location from "@/models/Location";
 import Warehouse from "@/models/Warehouse";
 import Operation from "@/models/Operation";
+import StockQuant from "@/models/StockQuant";
 import User from "@/models/user";
 
 const serialize = (data) => JSON.parse(JSON.stringify(data));
@@ -23,6 +24,22 @@ const parseNumber = (value, fallback = 0) => {
 };
 
 const toObjectId = (value) => value?.toString().trim();
+
+const isInternalLocation = (location) => Boolean(location && location.warehouse);
+
+const getLocationId = (location) => {
+  if (!location) {
+    return undefined;
+  }
+  return toObjectId(location._id || location);
+};
+
+const adjustProductTotal = async (productId, delta) => {
+  if (!productId || !delta) {
+    return;
+  }
+  await Product.findByIdAndUpdate(productId, { $inc: { totalStock: delta } });
+};
 
 export async function createProduct(formData) {
   try {
@@ -64,8 +81,42 @@ export async function getProducts(query = {}) {
       filter.$or = [{ name: regex }, { sku: regex }];
     }
 
-    const products = await Product.find(filter).sort({ name: 1 }).lean();
-    return serialize(products);
+    const [products, draftOperations] = await Promise.all([
+      Product.find(filter).sort({ name: 1 }).lean(),
+      Operation.find({ status: "draft" }).select("type lines").lean(),
+    ]);
+
+    const adjustments = new Map();
+
+    draftOperations.forEach((operation) => {
+      const direction = operation.type === "receipt" ? 1 : operation.type === "delivery" ? -1 : 0;
+      if (!direction || !Array.isArray(operation.lines)) {
+        return;
+      }
+
+      operation.lines.forEach((line) => {
+        const productId = toObjectId(line?.product);
+        const quantity = parseNumber(line?.quantity);
+        if (!productId || quantity <= 0) {
+          return;
+        }
+        const nextValue = (adjustments.get(productId) || 0) + direction * quantity;
+        adjustments.set(productId, nextValue);
+      });
+    });
+
+    const withForecast = products.map((product) => {
+      const productId = product._id?.toString();
+      const delta = productId ? adjustments.get(productId) || 0 : 0;
+      const totalStock = parseNumber(product.totalStock, 0);
+      return {
+        ...product,
+        uom: product.uom || "Units",
+        forecasted: totalStock + delta,
+      };
+    });
+
+    return serialize(withForecast);
   } catch (error) {
     console.error("getProducts error", error);
     return [];
@@ -130,11 +181,15 @@ export async function getWarehouses() {
 export async function createLocation(formData) {
   try {
     const name = getField(formData, "name")?.toString().trim();
-    const address = getField(formData, "address")?.toString().trim() || undefined;
+    const shortCode = getField(formData, "shortCode")?.toString().trim();
     const warehouseId = toObjectId(getField(formData, "warehouse"));
 
     if (!name) {
       return { error: "Location name is required" };
+    }
+
+    if (!shortCode) {
+      return { error: "Location short code is required" };
     }
 
     if (!warehouseId) {
@@ -145,8 +200,8 @@ export async function createLocation(formData) {
 
     await Location.create({
       name,
+      shortCode: shortCode.toUpperCase(),
       warehouse: warehouseId,
-      address,
     });
 
     revalidatePath("/inventory/locations");
@@ -412,6 +467,212 @@ export async function getOperations(typeFilter) {
   } catch (error) {
     console.error("getOperations error", error);
     return [];
+  }
+}
+
+export async function getMoveHistory() {
+  try {
+    await connectDB();
+
+    const moves = await Operation.find({ status: "done" })
+      .populate("sourceLocation")
+      .populate("destLocation")
+      .populate("responsible", "name")
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    return serialize(moves);
+  } catch (error) {
+    console.error("getMoveHistory error", error);
+    return [];
+  }
+}
+
+export async function getDashboardStats() {
+  try {
+    await connectDB();
+
+    const [pendingReceipts, pendingDeliveries, pendingInternal, lowStockItems, totalProducts] =
+      await Promise.all([
+        Operation.countDocuments({ type: "receipt", status: "draft" }),
+        Operation.countDocuments({ type: "delivery", status: "draft" }),
+        Operation.countDocuments({ type: "internal", status: "draft" }),
+        Product.countDocuments({
+          status: "active",
+          $expr: { $lt: ["$totalStock", "$minStockRule"] },
+        }),
+        Product.countDocuments({ status: "active" }),
+      ]);
+
+    return serialize({
+      pendingReceipts,
+      pendingDeliveries,
+      pendingInternal,
+      lowStockItems,
+      totalProducts,
+    });
+  } catch (error) {
+    console.error("getDashboardStats error", error);
+    return serialize({
+      pendingReceipts: 0,
+      pendingDeliveries: 0,
+      pendingInternal: 0,
+      lowStockItems: 0,
+      totalProducts: 0,
+    });
+  }
+}
+
+export async function getStockQuants(productId) {
+  try {
+    const productObjectId = toObjectId(productId);
+    if (!productObjectId) {
+      return [];
+    }
+
+    await connectDB();
+    const quants = await StockQuant.find({ product: productObjectId })
+      .populate("location", "name")
+      .lean();
+
+    return serialize(quants);
+  } catch (error) {
+    console.error("getStockQuants error", error);
+    return [];
+  }
+}
+
+export async function validateOperation(id) {
+  try {
+    const operationId = toObjectId(id);
+    if (!operationId) {
+      return { error: "Operation id is required" };
+    }
+
+    await connectDB();
+
+    const operation = await Operation.findById(operationId)
+      .populate("sourceLocation")
+      .populate("destLocation")
+      .populate({ path: "lines.product", select: "name" });
+
+    if (!operation) {
+      return { error: "Operation not found" };
+    }
+
+    if (operation.status === "done") {
+      return { error: "Operation already validated" };
+    }
+
+    const sourceInternal = isInternalLocation(operation.sourceLocation);
+    const destInternal = isInternalLocation(operation.destLocation);
+    const sourceLocationId = getLocationId(operation.sourceLocation);
+    const destLocationId = getLocationId(operation.destLocation);
+
+    for (const line of operation.lines) {
+      const lineProduct = line.product;
+      const productId = toObjectId(lineProduct?._id || lineProduct);
+      const productName = lineProduct?.name || "product";
+      const quantity = parseNumber(line.quantity, 0);
+
+      if (!productId || quantity <= 0) {
+        continue;
+      }
+
+      if (sourceInternal && sourceLocationId) {
+        const quant = await StockQuant.findOne({ product: productId, location: sourceLocationId });
+        if (!quant || quant.quantity < quantity) {
+          throw new Error(`Insufficient stock for ${productName} at source`);
+        }
+        quant.quantity -= quantity;
+        await quant.save();
+
+        if (!destInternal) {
+          await adjustProductTotal(productId, -quantity);
+        }
+      }
+
+      if (destInternal && destLocationId) {
+        await StockQuant.findOneAndUpdate(
+          { product: productId, location: destLocationId },
+          { $inc: { quantity } },
+          { upsert: true, setDefaultsOnInsert: true }
+        );
+
+        if (!sourceInternal) {
+          await adjustProductTotal(productId, quantity);
+        }
+      }
+    }
+
+    operation.status = "done";
+    await operation.save();
+
+    revalidatePath("/inventory/dashboard");
+    revalidatePath("/inventory/products");
+    revalidatePath("/inventory/operations");
+
+    return { success: true };
+  } catch (error) {
+    console.error("validateOperation error", error);
+    return { error: error.message || "Failed to validate operation" };
+  }
+}
+
+export async function createAdjustment(formData) {
+  try {
+    const productId = toObjectId(getField(formData, "productId"));
+    const locationId = toObjectId(getField(formData, "locationId"));
+    const realQuantityRaw = getField(formData, "realQuantity");
+    const realQuantity = parseNumber(realQuantityRaw, NaN);
+
+    if (!productId || !locationId) {
+      return { error: "Product and location are required" };
+    }
+
+    if (!Number.isFinite(realQuantity) || realQuantity < 0) {
+      return { error: "Real quantity must be a non-negative number" };
+    }
+
+    await connectDB();
+
+    const currentQuant = await StockQuant.findOne({ product: productId, location: locationId });
+    const currentQuantity = currentQuant?.quantity ?? 0;
+    const diff = realQuantity - currentQuantity;
+
+    if (diff === 0) {
+      return { success: true, message: "No adjustment needed" };
+    }
+
+    await StockQuant.findOneAndUpdate(
+      { product: productId, location: locationId },
+      { $set: { quantity: realQuantity } },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
+
+    await Product.findByIdAndUpdate(productId, { $inc: { totalStock: diff } });
+
+    await Operation.create({
+      reference: `ADJ/${Date.now()}`,
+      type: "adjustment",
+      status: "done",
+      sourceLocation: locationId,
+      destLocation: locationId,
+      lines: [
+        {
+          product: productId,
+          quantity: Math.abs(diff),
+        },
+      ],
+    });
+
+    revalidatePath("/inventory/dashboard");
+    revalidatePath("/inventory/products");
+
+    return { success: true, diff };
+  } catch (error) {
+    console.error("createAdjustment error", error);
+    return { error: "Failed to apply stock adjustment" };
   }
 }
 
