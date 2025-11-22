@@ -263,7 +263,7 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
   // Prevent new receipt creation if not manager
   if (!isEditMode && !isManager) {
     return (
-      <div className="min-h-screen bg-black text-white p-6">
+      <div className="min-h-screen py-20 bg-black text-white p-6">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6 p-6 bg-red-900/20 border border-red-700 rounded-lg">
             <h2 className="text-2xl font-bold text-red-500 mb-4">Access Denied</h2>

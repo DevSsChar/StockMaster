@@ -2,11 +2,26 @@
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [receiptData, setReceiptData] = useState({
+    title: "Receipt",
+    toDeliver: 0,
+    late: 0,
+    waiting: 0,
+    operations: 0,
+  });
+  const [deliveryData, setDeliveryData] = useState({
+    title: "Delivery",
+    toDeliver: 0,
+    late: 0,
+    waiting: 0,
+    operations: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -14,7 +29,64 @@ export default function Dashboard() {
     }
   }, [status, router]);
 
-  if (status === "loading") {
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch receipts
+        const receiptRes = await fetch('/api/receipts');
+        const receiptResult = await receiptRes.json();
+        
+        // Fetch deliveries
+        const deliveryRes = await fetch('/api/deliveries');
+        const deliveryResult = await deliveryRes.json();
+
+        if (receiptResult.success && receiptResult.data) {
+          const receipts = receiptResult.data;
+          const now = new Date();
+          
+          setReceiptData({
+            title: "Receipt",
+            toDeliver: receipts.filter(r => r.status === 'ready' || r.status === 'draft').length,
+            late: receipts.filter(r => {
+              const scheduled = new Date(r.scheduledDate);
+              return scheduled < now && r.status !== 'done';
+            }).length,
+            waiting: receipts.filter(r => r.status === 'draft').length,
+            operations: receipts.length,
+          });
+        }
+
+        if (deliveryResult.success && deliveryResult.data) {
+          const deliveries = deliveryResult.data;
+          const now = new Date();
+          
+          setDeliveryData({
+            title: "Delivery",
+            toDeliver: deliveries.filter(d => d.status === 'ready' || d.status === 'draft').length,
+            late: deliveries.filter(d => {
+              const scheduled = new Date(d.scheduledDate);
+              return scheduled < now && d.status !== 'done';
+            }).length,
+            waiting: deliveries.filter(d => d.status === 'draft').length,
+            operations: deliveries.length,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (status === "authenticated") {
+      fetchDashboardData();
+    }
+  }, [status]);
+
+  if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-700"></div>
@@ -25,30 +97,6 @@ export default function Dashboard() {
   if (status === "unauthenticated") {
     return null;
   }
-
-  // Static data
-  const receiptData = {
-    title: "Receipt",
-    toDeliver: 4,
-    late: 1,
-    operations: 6,
-    items: [
-      { name: "Speedy Koala", color: "bg-green-600" },
-      { name: "Grignard", color: "bg-amber-700" },
-    ]
-  };
-
-  const deliveryData = {
-    title: "Delivery",
-    toDeliver: 1,
-    late: 1,
-    waiting: 2,
-    operations: 6,
-    // items: [
-    //   { name: "Attractive Reindeer", color: "bg-purple-600", late: 1, operations: 6 },
-    //   { name: "Squiggly Duck", color: "bg-indigo-600" },
-    // ]
-  };
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#f5f5f7] overflow-hidden">

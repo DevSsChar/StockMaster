@@ -347,6 +347,7 @@ const buildOperationReference = (type) => {
     receipt: "WH/IN/",
     delivery: "WH/OUT/",
     internal: "WH/INT/",
+    adjustment: "WH/ADJ/",
   };
   return `${prefixes[type] || "WH/OP/"}${Date.now()}`;
 };
