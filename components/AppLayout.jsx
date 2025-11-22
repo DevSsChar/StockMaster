@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import UniversalNavbar from "@/components/ui/universal-navbar";
+import Dashboard from "@/components/dashboard";
 
 export default function AppLayout({ children }) {
   const { data: session, status } = useSession();
@@ -41,11 +42,7 @@ export default function AppLayout({ children }) {
   const renderPageContent = () => {
     switch (currentPage) {
       case 'dashboard':
-        return (
-          <div>
-            {/* Dashboard content area - ready for team design */}
-          </div>
-        );
+        return <Dashboard />;
       case 'operations':
         return (
           <div>
@@ -79,6 +76,12 @@ export default function AppLayout({ children }) {
     }
   };
 
+  // For dashboard page, render the full Dashboard component without extra wrapper
+  if (currentPage === 'dashboard') {
+    return <Dashboard />;
+  }
+
+  // For other pages, use the navbar layout
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
       <UniversalNavbar />
