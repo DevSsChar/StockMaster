@@ -1,91 +1,97 @@
-import { ShaderBackground } from "@/components/ui/hero-shader";
+import UniversalNavbar from "@/components/ui/universal-navbar";
+import VantaWaves from "@/components/ui/vanta-waves";
 import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="m-6 w-full">
-      <ShaderBackground>
-        <header className="relative z-20 flex items-center justify-between p-6">
-          {/* Logo */}
-          <div className="flex items-center">
-            <svg width="24" height="24" viewBox="0 0 392.02 324.6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path fill="#fff200" d="M268.08,0c-27.4,0-51.41,4.43-72.07,13.26C175.36,4.43,151.35,0,123.95,0H0v324.6h123.95c27.37,0,51.38-4.58,72.07-13.7,20.69,9.12,44.7,13.7,72.07,13.7h123.95V0h-123.95ZM324.09,268.36h-47.91c-20.25,0-37.3-4.05-51.18-12.15-12.28-7.17-21.94-17.41-28.99-30.7h0s0,0,0,0c0,0,0,0,0,0h0c-7.05,13.29-16.71,23.53-28.99,30.7-13.87,8.1-30.93,12.15-51.18,12.15h-47.91V56.24h47.91c19.8,0,36.67,4.01,50.61,12.04,12.51,7.2,22.35,17.47,29.55,30.77h0s0,0,0,0c0,0,0,0,0,0h0c7.2-13.3,17.04-23.57,29.55-30.77,13.95-8.02,30.82-12.04,50.61-12.04h47.91v212.13Z"></path>
-            </svg>
-          </div>
+    <div className="min-h-screen bg-gray-900 relative">
+      {/* Universal Navigation */}
+      <UniversalNavbar />
 
-          {/* Navigation */}
-          <nav className="flex items-center space-x-2">
-            <a
-              href="#"
-              className="text-white/80 hover:text-white text-xs font-light px-3 py-2 rounded-full hover:bg-white/10 transition-all duration-200"
-            >
-              Products
-            </a>
-            <a
-              href="#"
-              className="text-white/80 hover:text-white text-xs font-light px-3 py-2 rounded-full hover:bg-white/10 transition-all duration-200"
-            >
-              Pricing
-            </a>
-            <a
-              href="#"
-              className="text-white/80 hover:text-white text-xs font-light px-3 py-2 rounded-full hover:bg-white/10 transition-all duration-200"
-            >
-              Docs
-            </a>
-          </nav>
+      {/* Vanta Waves Background */}
+      <VantaWaves>
+        {/* Hero Section */}
+        <div className="relative overflow-hidden mt-32">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+            <div className="text-center">
+              {/* Badge */}
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-600/20 border border-blue-500/30 backdrop-blur-sm mb-8">
+                <span className="text-blue-300 text-sm font-medium">
+                  🚀 Advanced Inventory Management
+                </span>
+              </div>
 
-          {/* Login Button Group with Arrow */}
-          <div id="gooey-btn" className="relative flex items-center group" style={{ filter: "url(#gooey-filter)" }}>
-            <button className="absolute right-0 px-2.5 py-2 rounded-full bg-white text-black font-normal text-xs transition-all duration-300 hover:bg-white/90 cursor-pointer h-8 flex items-center justify-center -translate-x-10 group-hover:-translate-x-19 z-0">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7V17" />
-              </svg>
-            </button>
-            <Link href="/login">
-              <button className="px-6 py-2 rounded-full bg-white text-black font-normal text-xs transition-all duration-300 hover:bg-white/90 cursor-pointer h-8 flex items-center z-10">
-                Login
-              </button>
-            </Link>
-          </div>
-        </header>
-        
-        <main className="absolute bottom-8 left-8 z-20 max-w-lg">
-          <div className="text-left">
-            <div
-              className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 backdrop-blur-sm mb-4 relative"
-              style={{
-                filter: "url(#glass-effect)",
-              }}
-            >
-              <div className="absolute top-0 left-1 right-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-full" />
-              <span className="text-white/90 text-xs font-light relative z-10">✨ New Design Ideas</span>
+              {/* Main Heading */}
+              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
+                Master Your <span className="text-blue-400">Warehouse</span>
+                <br />
+                <span className="text-gray-200">Operations</span>
+              </h1>
+
+              {/* Description */}
+              <p className="text-xl text-gray-200 mb-10 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
+                Streamline your inventory management with our powerful platform. 
+                Track stock levels, manage warehouses, and optimize your supply chain 
+                with enterprise-grade precision.
+              </p>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+                <Link href="/login">
+                  <button className="bg-blue-600/90 hover:bg-blue-700 backdrop-blur-sm text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-300 inline-flex items-center shadow-xl hover:shadow-2xl hover:scale-105">
+                    Start Managing Inventory
+                    <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </button>
+                </Link>
+                <button className="border border-gray-400/50 text-gray-200 hover:text-white hover:border-gray-300 hover:bg-white/10 backdrop-blur-sm px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
+                  Watch Demo
+                </button>
+              </div>
+
+              {/* Features Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
+                <div className="bg-gray-800/30 border border-gray-600/30 rounded-xl p-6 backdrop-blur-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                  <div className="bg-blue-600/80 w-12 h-12 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">Real-time Tracking</h3>
+                  <p className="text-gray-300">
+                    Monitor your inventory levels across all warehouses in real-time with automatic updates and alerts.
+                  </p>
+                </div>
+
+                <div className="bg-gray-800/30 border border-gray-600/30 rounded-xl p-6 backdrop-blur-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                  <div className="bg-green-600/80 w-12 h-12 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">Analytics & Reports</h3>
+                  <p className="text-gray-300">
+                    Generate comprehensive reports and gain insights into your inventory performance and trends.
+                  </p>
+                </div>
+
+                <div className="bg-gray-800/30 border border-gray-600/30 rounded-xl p-6 backdrop-blur-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                  <div className="bg-purple-600/80 w-12 h-12 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">Automated Operations</h3>
+                  <p className="text-gray-300">
+                    Automate reordering, stock movements, and notifications to optimize your workflow efficiency.
+                  </p>
+                </div>
+              </div>
             </div>
-
-            {/* Main Heading */}
-            <h1 className="text-5xl md:text-6xl leading-14 tracking-tight  text-white mb-4">
-              <span className="italic instrument">Beautiful</span> Design
-              <br />
-              <span className="tracking-tight text-white font-bold">Experiences</span>
-            </h1>
-
-            {/* Description */}
-            <p className="text-xs font-light text-white/70 mb-4 leading-relaxed">
-              Discover the essence of creativity in our exquisite collection of top-tier abstract design assets. Each piece is a blend of beauty and utility, perfect for elevating any project.
-            </p>
-
-            {/* Buttons */}
-            <div className="flex items-center gap-4 flex-wrap">
-              <button className="px-8 py-3 rounded-full bg-transparent border border-white/30 text-white font-normal text-xs transition-all duration-200 hover:bg-white/10 hover:border-white/50 cursor-pointer">
-                Pricing
-              </button>
-              <button className="px-8 py-3 rounded-full bg-white text-black font-normal text-xs transition-all duration-200 hover:bg-white/90 cursor-pointer">
-                Get Started
-              </button>
-            </div>
           </div>
-        </main>
-      </ShaderBackground>
+        </div>
+      </VantaWaves>
     </div>
   );
 }

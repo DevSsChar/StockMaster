@@ -67,6 +67,7 @@ const LoginComponent = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -103,6 +104,12 @@ const LoginComponent = () => {
 
     try {
       if (isSignup) {
+        // Validate password confirmation
+        if (password !== confirmPassword) {
+          setError('Passwords do not match');
+          return;
+        }
+        
         // Handle signup
         const result = await signupUser({ email, password, name });
         
@@ -110,6 +117,7 @@ const LoginComponent = () => {
           setSuccess(result.message);
           setEmail('');
           setPassword('');
+          setConfirmPassword('');
           setName('');
           // Switch to login mode after 2 seconds
           setTimeout(() => {
@@ -283,6 +291,15 @@ const LoginComponent = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                  {isSignup && (
+                    <AppInput 
+                      placeholder="Re-enter Password" 
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  )}
                 </div>
                 
                 {!isSignup && (
