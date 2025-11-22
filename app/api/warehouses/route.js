@@ -76,7 +76,7 @@ export async function POST(request) {
     const warehouse = await Warehouse.create({
       name,
       shortCode: shortCode.toUpperCase(),
-      address: address || '',
+      address: address || "",
     });
 
     return NextResponse.json(

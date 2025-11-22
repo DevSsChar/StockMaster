@@ -488,37 +488,195 @@ export async function getMoveHistory() {
   }
 }
 
-export async function getDashboardStats() {
+export async function getDashboardStats(filters = {}) {
   try {
     await connectDB();
 
-    const [pendingReceipts, pendingDeliveries, pendingInternal, lowStockItems, totalProducts] =
-      await Promise.all([
-        Operation.countDocuments({ type: "receipt", status: "draft" }),
-        Operation.countDocuments({ type: "delivery", status: "draft" }),
-        Operation.countDocuments({ type: "internal", status: "draft" }),
-        Product.countDocuments({
-          status: "active",
-          $expr: { $lt: ["$totalStock", "$minStockRule"] },
-        }),
-        Product.countDocuments({ status: "active" }),
-      ]);
+    // Build operation filter
+    const operationFilter = {};
+    const locationConditions = [];
+    
+    if (filters.type) operationFilter.type = filters.type;
+    if (filters.status) operationFilter.status = filters.status;
+    
+    // Handle warehouse filter
+    if (filters.warehouse) {
+      const warehouseLocations = await Location.find({ warehouse: filters.warehouse }).select("_id");
+      const locationIds = warehouseLocations.map(loc => loc._id);
+      if (locationIds.length > 0) {
+        locationConditions.push({
+          $or: [
+            { sourceLocation: { $in: locationIds } },
+            { destLocation: { $in: locationIds } }
+          ]
+        });
+      }
+    }
+    
+    // Handle location filter
+    if (filters.location) {
+      locationConditions.push({
+        $or: [
+          { sourceLocation: filters.location },
+          { destLocation: filters.location }
+        ]
+      });
+    }
+    
+    // Merge location conditions
+    if (locationConditions.length > 0) {
+      operationFilter.$and = locationConditions;
+    }
 
-    return serialize({
+    // Build product filter
+    const productFilter = { status: "active" };
+    if (filters.category) productFilter.category = filters.category;
+
+    const [
+      totalProducts,
+      lowStockItems,
+      outOfStockItems,
       pendingReceipts,
       pendingDeliveries,
-      pendingInternal,
-      lowStockItems,
-      totalProducts,
+      internalTransfers,
+      pendingAdjustments,
+      draftOperations,
+      waitingOperations,
+      readyOperations,
+      doneOperations,
+      cancelledOperations,
+      totalOperations,
+      products
+    ] = await Promise.all([
+      Product.countDocuments(productFilter),
+      Product.countDocuments({
+        ...productFilter,
+        minStockRule: { $gt: 0 },
+        $expr: { $and: [{ $lt: ["$totalStock", "$minStockRule"] }, { $gt: ["$totalStock", 0] }] }
+      }),
+      Product.countDocuments({
+        ...productFilter,
+        totalStock: 0
+      }),
+      filters.type === "receipt" || !filters.type 
+        ? Operation.countDocuments({ 
+            ...Object.fromEntries(Object.entries(operationFilter).filter(([key]) => key !== 'type' && key !== 'status')), 
+            type: "receipt", 
+            status: { $in: ["draft", "waiting", "ready"] } 
+          })
+        : Promise.resolve(0),
+      filters.type === "delivery" || !filters.type
+        ? Operation.countDocuments({ 
+            ...Object.fromEntries(Object.entries(operationFilter).filter(([key]) => key !== 'type' && key !== 'status')), 
+            type: "delivery", 
+            status: { $in: ["draft", "waiting", "ready"] } 
+          })
+        : Promise.resolve(0),
+      filters.type === "internal" || !filters.type
+        ? Operation.countDocuments({ 
+            ...Object.fromEntries(Object.entries(operationFilter).filter(([key]) => key !== 'type' && key !== 'status')), 
+            type: "internal", 
+            status: { $in: ["draft", "waiting", "ready"] } 
+          })
+        : Promise.resolve(0),
+      filters.type === "adjustment" || !filters.type
+        ? Operation.countDocuments({ 
+            ...Object.fromEntries(Object.entries(operationFilter).filter(([key]) => key !== 'type' && key !== 'status')), 
+            type: "adjustment", 
+            status: { $in: ["draft", "waiting", "ready"] } 
+          })
+        : Promise.resolve(0),
+      Operation.countDocuments({ 
+        ...operationFilter,
+        status: "draft" 
+      }),
+      Operation.countDocuments({ 
+        ...operationFilter,
+        status: "waiting" 
+      }),
+      Operation.countDocuments({ 
+        ...operationFilter,
+        status: "ready" 
+      }),
+      Operation.countDocuments({ 
+        ...operationFilter,
+        status: "done" 
+      }),
+      Operation.countDocuments({ 
+        ...operationFilter,
+        status: "cancelled" 
+      }),
+      Operation.countDocuments(operationFilter),
+      Product.find(productFilter).select("totalStock").lean()
+    ]);
+
+    const totalStockValue = products.reduce((sum, p) => sum + (p.totalStock || 0), 0);
+
+    return serialize({
+      kpis: {
+        totalProducts,
+        totalStockValue,
+        lowStockItems,
+        outOfStockItems,
+        pendingReceipts,
+        pendingDeliveries,
+        internalTransfers,
+        pendingAdjustments,
+      },
+      byStatus: {
+        draft: draftOperations,
+        waiting: waitingOperations,
+        ready: readyOperations,
+        done: doneOperations,
+        cancelled: cancelledOperations,
+      },
+      byType: {
+        receipt: await Operation.countDocuments({ 
+          ...operationFilter,
+          type: "receipt" 
+        }),
+        delivery: await Operation.countDocuments({ 
+          ...operationFilter,
+          type: "delivery" 
+        }),
+        internal: await Operation.countDocuments({ 
+          ...operationFilter,
+          type: "internal" 
+        }),
+        adjustment: await Operation.countDocuments({ 
+          ...operationFilter,
+          type: "adjustment" 
+        }),
+      },
+      totalOperations,
     });
   } catch (error) {
     console.error("getDashboardStats error", error);
     return serialize({
-      pendingReceipts: 0,
-      pendingDeliveries: 0,
-      pendingInternal: 0,
-      lowStockItems: 0,
-      totalProducts: 0,
+      kpis: {
+        totalProducts: 0,
+        totalStockValue: 0,
+        lowStockItems: 0,
+        outOfStockItems: 0,
+        pendingReceipts: 0,
+        pendingDeliveries: 0,
+        internalTransfers: 0,
+        pendingAdjustments: 0,
+      },
+      byStatus: {
+        draft: 0,
+        waiting: 0,
+        ready: 0,
+        done: 0,
+        cancelled: 0,
+      },
+      byType: {
+        receipt: 0,
+        delivery: 0,
+        internal: 0,
+        adjustment: 0,
+      },
+      totalOperations: 0,
     });
   }
 }
