@@ -22,19 +22,52 @@ const MoveHistory = () => {
 
       if (result.success && result.data) {
         // Transform API data to match component structure
-        const transformedOps = result.data.map(op => ({
-          reference: op.reference,
-          contact: op.partner || 'N/A',
-          from: op.sourceLocation?.name || 'N/A',
-          to: op.destLocation?.name || 'N/A',
-          status: op.status.charAt(0).toUpperCase() + op.status.slice(1),
-          type: op.type,
-          lines: op.lines || [],
-          products: op.lines?.map(line => ({
-            name: line.product?.name || 'Unknown Product',
-            quantity: line.quantity || 0
-          })) || []
-        }))
+        const transformedOps = result.data.map(op => {
+          let fromLocation = 'N/A';
+          let toLocation = 'N/A';
+
+          // Determine FROM location
+          if (op.type === 'receipt') {
+            // Receipts come from external supplier
+            fromLocation = op.receiveFrom || 'External Supplier';
+          } else if (op.type === 'delivery') {
+            // Deliveries come from warehouse
+            fromLocation = op.sourceLocation?.name || 'Main Warehouse';
+          } else {
+            fromLocation = op.sourceLocation?.name || 'N/A';
+          }
+
+          // Determine TO location
+          if (op.type === 'receipt') {
+            // Receipts go to warehouse
+            toLocation = op.destLocation?.name || 'Main Warehouse';
+          } else if (op.type === 'delivery') {
+            if (op.operationType === 'internal') {
+              // Internal transfers go to another warehouse
+              toLocation = op.destLocation?.name || 'Warehouse';
+            } else {
+              // External deliveries go to customer address
+              toLocation = op.deliveryAddress || 'Customer';
+            }
+          } else {
+            toLocation = op.destLocation?.name || 'N/A';
+          }
+
+          return {
+            reference: op.reference,
+            contact: op.responsible || op.partner || 'N/A',
+            from: fromLocation,
+            to: toLocation,
+            status: op.status.charAt(0).toUpperCase() + op.status.slice(1),
+            type: op.type,
+            operationType: op.operationType,
+            lines: op.lines || [],
+            products: op.lines?.map(line => ({
+              name: line.product?.name || 'Unknown Product',
+              quantity: line.quantity || 0
+            })) || []
+          };
+        })
         setOperations(transformedOps)
       }
     } catch (error) {

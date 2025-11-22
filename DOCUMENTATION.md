@@ -127,18 +127,45 @@ StockMaster/
 ### Operation Model
 ```javascript
 {
-  reference: String (required, unique),
-  type: String (enum: ['delivery', 'receipt'], required),
-  status: String (enum: ['pending', 'in-progress', 'completed', 'cancelled', 'waiting'], required),
+  reference: String (required, unique, uppercase),
+  type: String (enum: ['receipt', 'delivery', 'adjustment'], required),
+  operationType: String (enum: ['internal', 'external']),
+  status: String (enum: ['draft', 'ready', 'waiting', 'done', 'cancelled'], default: 'draft'),
+  responsible: String,
+  deliveryAddress: String (for external deliveries),
+  receiveFrom: String (for receipts),
+  sourceLocation: ObjectId (ref: 'Warehouse'),
+  destLocation: ObjectId (ref: 'Warehouse'),
   lines: [{
     product: ObjectId (ref: 'Product', required),
-    quantity: Number (required),
-    _id: ObjectId
+    quantity: Number (required, min: 0)
   }],
-  responsible: String,
-  deliveryAddress: String,
-  receiveFrom: String,
-  notes: String,
+  scheduledDate: Date (default: Date.now),
+  partner: String,
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### Warehouse Model
+```javascript
+{
+  name: String (required),
+  shortCode: String (required, unique, uppercase),
+  address: String,
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### Location Model
+```javascript
+{
+  name: String (required),
+  shortCode: String (required, uppercase),
+  warehouse: ObjectId (ref: 'Warehouse', required),
+  address: String,
+  status: String (enum: ['active', 'archived'], default: 'active'),
   createdAt: Date,
   updatedAt: Date
 }
@@ -305,6 +332,47 @@ Response:
 }
 ```
 
+### Warehouse Endpoints
+
+#### GET `/api/warehouses`
+Get main warehouse information
+```javascript
+Response:
+{
+  success: Boolean,
+  data: Warehouse
+}
+```
+
+#### POST `/api/warehouses`
+Create a new warehouse
+```javascript
+Request Body:
+{
+  name: String (required),
+  shortCode: String (required),
+  address: String
+}
+
+Response:
+{
+  success: Boolean,
+  message: String,
+  data: Warehouse
+}
+```
+
+#### POST `/api/warehouses/initialize`
+Initialize default warehouse (creates if none exists)
+```javascript
+Response:
+{
+  success: Boolean,
+  message: String,
+  data: Warehouse
+}
+```
+
 ### Delivery Endpoints
 
 #### GET `/api/deliveries`
@@ -318,17 +386,20 @@ Response:
 ```
 
 #### POST `/api/deliveries`
-Create a new delivery
+Create a new delivery (Manager only)
 ```javascript
 Request Body:
 {
-  lines: [{
-    product: String (Product ID),
+  operationType: String ('internal' or 'external', required),
+  deliveryAddress: String (required for external),
+  destWarehouseId: String (required for internal),
+  responsible: String,
+  scheduleDate: Date,
+  products: [{
+    productId: String,
+    name: String,
     quantity: Number
   }],
-  responsible: String,
-  deliveryAddress: String,
-  notes: String,
   status: String
 }
 
@@ -338,6 +409,12 @@ Response:
   message: String,
   data: Operation
 }
+
+Notes:
+- Source location is automatically set to main warehouse
+- For external deliveries: destination is deliveryAddress
+- For internal deliveries: destination is destWarehouseId
+- Reference format: WH/OUT/####
 ```
 
 #### GET `/api/deliveries/[id]`
@@ -383,17 +460,18 @@ Response:
 ```
 
 #### POST `/api/receipts`
-Create a new receipt
+Create a new receipt (Manager only)
 ```javascript
 Request Body:
 {
-  lines: [{
-    product: String (Product ID),
+  receiveFrom: String (supplier/vendor name),
+  responsible: String,
+  scheduleDate: Date,
+  products: [{
+    productId: String,
+    name: String,
     quantity: Number
   }],
-  responsible: String,
-  receiveFrom: String,
-  notes: String,
   status: String
 }
 
@@ -403,6 +481,11 @@ Response:
   message: String,
   data: Operation
 }
+
+Notes:
+- Source is external (tracked via receiveFrom field)
+- Destination is automatically set to main warehouse
+- Reference format: WH/IN/####
 ```
 
 #### GET `/api/receipts/[id]`
@@ -434,6 +517,54 @@ Response:
   data: Operation
 }
 ```
+
+## Inventory Management Rules
+
+### Receipt Operations (Incoming Stock)
+
+**Source & Destination:**
+- **Source**: External supplier (tracked via `receiveFrom` field)
+- **Destination**: Main warehouse (automatically set from database)
+
+**Status Flow:**
+```
+Draft → Ready → Done
+```
+
+**States:**
+- **Draft**: Receipt created but not confirmed
+- **Ready**: Receipt confirmed and ready to receive
+- **Done**: Goods received and stock updated
+
+### Delivery Operations (Outgoing Stock)
+
+**Source & Destination:**
+- **Source**: Main warehouse (automatically set from database)
+- **Destination**: 
+  - **External**: Customer/external location (via `deliveryAddress`)
+  - **Internal**: Another warehouse (via `destLocation`)
+
+**Status Flow:**
+```
+Draft → Waiting → Ready → Done
+```
+
+**States:**
+- **Draft**: Delivery created but not confirmed
+- **Waiting**: Waiting for stock availability
+- **Ready**: Stock available and ready to deliver
+- **Done**: Goods delivered and stock updated
+
+**Operation Types:**
+- **External**: Delivery to customer or external location
+- **Internal**: Transfer between warehouses
+
+### Reference Number Format
+
+- **Receipts**: `WH/IN/####` (e.g., WH/IN/0001, WH/IN/0002)
+- **Deliveries**: `WH/OUT/####` (e.g., WH/OUT/0001, WH/OUT/0002)
+
+Each type maintains its own sequential counter.
 
 ## Key Features & Functionalities
 

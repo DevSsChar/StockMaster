@@ -21,9 +21,7 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
     scheduleDate: '',
   });
 
-  const [products, setProducts] = useState([
-    { id: 1, name: '[DESK001] Desk', quantity: 6 }
-  ]);
+  const [products, setProducts] = useState([]);
 
   // Fetch existing receipt data in edit mode
   useEffect(() => {
@@ -263,8 +261,8 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
 
   if (dataLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
-        <div className="text-red-500 text-xl">Loading receipt data...</div>
+      <div className="h-screen w-screen flex items-center justify-center bg-[#f5f5f7]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
       </div>
     );
   }
@@ -272,16 +270,16 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
   // Redirect if not manager and trying to edit
   if (isEditMode && !isManager) {
     return (
-      <div className="min-h-screen bg-black text-white p-6">
+      <div className="h-screen w-screen flex flex-col bg-[#f5f5f7] pt-16 p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-6 p-6 bg-red-900/20 border border-red-700 rounded-lg">
-            <h2 className="text-2xl font-bold text-red-500 mb-4">Access Denied</h2>
-            <p className="text-gray-300 mb-4">
+          <div className="mb-6 p-6 bg-red-100 border border-red-400 rounded-lg">
+            <h2 className="text-2xl font-bold text-red-700 mb-4">Access Denied</h2>
+            <p className="text-gray-700 mb-4">
               Only managers can edit receipts. You don't have permission to modify this record.
             </p>
             <button
               onClick={() => router.push('/receipts')}
-              className="bg-red-900/30 hover:bg-red-900/50 text-white px-6 py-2 rounded border border-red-700 transition font-medium"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition-all"
             >
               Back to Receipts
             </button>
@@ -294,16 +292,16 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
   // Prevent new receipt creation if not manager
   if (!isEditMode && !isManager) {
     return (
-      <div className="min-h-screen py-20 bg-black text-white p-6">
+      <div className="h-screen w-screen flex flex-col bg-[#f5f5f7] pt-16 p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-6 p-6 bg-red-900/20 border border-red-700 rounded-lg">
-            <h2 className="text-2xl font-bold text-red-500 mb-4">Access Denied</h2>
-            <p className="text-gray-300 mb-4">
+          <div className="mb-6 p-6 bg-red-100 border border-red-400 rounded-lg">
+            <h2 className="text-2xl font-bold text-red-700 mb-4">Access Denied</h2>
+            <p className="text-gray-700 mb-4">
               Only managers can create new receipts. You don't have permission to perform this action.
             </p>
             <button
               onClick={() => router.push('/receipts')}
-              className="bg-red-900/30 hover:bg-red-900/50 text-white px-6 py-2 rounded border border-red-700 transition font-medium"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition-all"
             >
               Back to Receipts
             </button>
@@ -314,11 +312,11 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="h-screen w-screen flex flex-col bg-[#f5f5f7] pt-20 p-6 overflow-auto">
       {/* Header */}
-      <div className="mb-6 border-b border-red-900/30 pb-6">
+      <div className="mb-6 border-b border-gray-300 pb-6">
         {error && (
-          <div className="mb-4 p-4 bg-red-900/20 border border-red-700 rounded-lg text-red-400">
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 rounded-lg text-red-700">
             {error}
           </div>
         )}
@@ -329,22 +327,22 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
               <button 
                 onClick={handleSaveDraft}
                 disabled={loading}
-                className="bg-red-900/30 hover:bg-red-900/50 text-white px-6 py-2 rounded border border-red-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Saving...' : 'Save'}
               </button>
             )}
-            <h1 className="text-3xl font-bold text-red-500">
+            <h1 className="text-3xl font-bold text-gray-900">
               {isEditMode ? `Edit Receipt - ${formData.reference}` : 'New Receipt'}
             </h1>
           </div>
 
           <div className="flex items-center gap-2 text-sm">
-            <span className={status === 'Draft' ? 'text-red-500 font-semibold' : 'text-gray-400'}>Draft</span>
-            <span className="text-red-500">→</span>
-            <span className={status === 'Ready' ? 'text-red-500 font-semibold' : 'text-gray-400'}>Ready</span>
-            <span className="text-red-500">→</span>
-            <span className={status === 'Done' ? 'text-red-500 font-semibold' : 'text-gray-400'}>Done</span>
+            <span className={status === 'Draft' ? 'text-purple-600 font-semibold' : 'text-gray-400'}>Draft</span>
+            <span className="text-gray-400">→</span>
+            <span className={status === 'Ready' ? 'text-purple-600 font-semibold' : 'text-gray-400'}>Ready</span>
+            <span className="text-gray-400">→</span>
+            <span className={status === 'Done' ? 'text-purple-600 font-semibold' : 'text-gray-400'}>Done</span>
           </div>
         </div>
 
@@ -355,7 +353,7 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
             <button
               onClick={handleSaveChanges}
               disabled={loading}
-              className="px-6 py-2 rounded border border-blue-700 text-white bg-blue-900/30 hover:bg-blue-900/50 transition font-semibold disabled:opacity-50"
+              className="px-6 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all font-semibold disabled:opacity-50"
             >
               {loading ? 'Saving...' : 'Save Changes'}
             </button>
@@ -366,7 +364,7 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
             <button
               onClick={handleToDo}
               disabled={loading}
-              className="px-6 py-2 rounded border border-red-700 text-white bg-red-900/30 hover:bg-red-900/50 transition font-semibold disabled:opacity-50"
+              className="px-6 py-2 rounded-lg text-white bg-purple-600 hover:bg-purple-700 transition-all font-semibold disabled:opacity-50"
             >
               {loading ? 'Updating...' : 'TO DO'}
             </button>
@@ -377,7 +375,7 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
             <button
               onClick={handleValidate}
               disabled={loading}
-              className="px-6 py-2 rounded border border-red-700 text-white bg-green-900/30 hover:bg-green-900/50 transition font-semibold disabled:opacity-50"
+              className="px-6 py-2 rounded-lg text-white bg-green-600 hover:bg-green-700 transition-all font-semibold disabled:opacity-50"
             >
               {loading ? 'Validating...' : 'Validate'}
             </button>
@@ -385,20 +383,20 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
           
           {/* Done indicator - visible when status is Done */}
           {status === 'Done' && (
-            <div className="px-6 py-2 rounded border border-green-700 text-green-500 bg-green-900/20 font-semibold">
+            <div className="px-6 py-2 rounded-lg border border-green-400 text-green-700 bg-green-100 font-semibold">
               ✓ Received
             </div>
           )}
           
           <button
             onClick={handlePrint}
-            className="px-6 py-2 rounded border border-red-700 text-white hover:bg-red-900/30 transition"
+            className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition-all"
           >
             Print
           </button>
           <button
             onClick={handleCancel}
-            className="px-6 py-2 rounded border border-red-700 text-white hover:bg-red-900/30 transition"
+            className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition-all"
           >
             Cancel
           </button>
@@ -406,11 +404,11 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
       </div>
 
       {/* Current Status Display */}
-      <div className="mb-6 border border-red-900/30 rounded-lg p-4 bg-red-900/10">
+      <div className="mb-6 border border-gray-300 rounded-lg p-4 bg-white shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-gray-400 text-sm">Current Status:</span>
-            <span className="text-red-500 font-bold text-xl ml-3">{status}</span>
+            <span className="text-gray-600 text-sm">Current Status:</span>
+            <span className="text-purple-600 font-bold text-xl ml-3">{status}</span>
           </div>
           <div className="text-sm text-gray-400">
             {status === 'Draft' && '→ Click "TO DO" to move to Ready'}
@@ -421,45 +419,45 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
       </div>
 
       {/* Main Form */}
-      <div className="border border-red-900/30 rounded-lg p-6">
+      <div className="border border-gray-300 rounded-lg p-6 bg-white shadow-sm">
         {/* Reference Number */}
         <div className="mb-6">
-          <h2 className="text-xl font-semibold">{formData.reference || 'WH/IN/0001'}</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{formData.reference || 'WH/IN/0001'}</h2>
         </div>
 
         {/* Form Fields Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
-            <label className="block text-red-500 mb-2">Receive From</label>
+            <label className="block text-gray-700 font-medium mb-2">Receive From</label>
             <input
               type="text"
               name="receiveFrom"
               value={formData.receiveFrom}
               onChange={handleInputChange}
-              className="w-full bg-black border-b border-red-700 py-2 text-white focus:outline-none focus:border-red-500"
+              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="Enter vendor/supplier"
             />
           </div>
 
           <div>
-            <label className="block text-red-500 mb-2">Schedule Date</label>
+            <label className="block text-gray-700 font-medium mb-2">Schedule Date</label>
             <input
               type="date"
               name="scheduleDate"
               value={formData.scheduleDate}
               onChange={handleInputChange}
-              className="w-full bg-black border-b border-red-700 py-2 text-white focus:outline-none focus:border-red-500"
+              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           <div>
-            <label className="block text-red-500 mb-2">Responsible</label>
+            <label className="block text-gray-700 font-medium mb-2">Responsible</label>
             <input
               type="text"
               name="responsible"
               value={formData.responsible}
               onChange={handleInputChange}
-              className="w-full bg-black border-b border-red-700 py-2 text-white focus:outline-none focus:border-red-500"
+              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder={session?.user?.name || "Auto fill with the current logged in users."}
             />
             <p className="text-xs text-gray-500 mt-1">Auto fill with the current logged in users.</p>
@@ -468,22 +466,22 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
 
         {/* Products Section */}
         <div className="mt-8">
-          <h3 className="text-xl font-semibold text-red-500 mb-4">Products</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Products</h3>
           
-          <div className="border border-red-900/30 rounded-lg overflow-hidden">
+          <div className="border border-gray-300 rounded-lg overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-red-900/50 bg-red-900/20">
-                  <th className="text-left py-3 px-4 text-red-500 font-semibold">Product</th>
-                  <th className="text-right py-3 px-4 text-red-500 font-semibold">Quantity</th>
-                  <th className="text-center py-3 px-4 text-red-500 font-semibold">Actions</th>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="text-left py-3 px-4 text-gray-700 font-semibold">Product</th>
+                  <th className="text-right py-3 px-4 text-gray-700 font-semibold">Quantity</th>
+                  <th className="text-center py-3 px-4 text-gray-700 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {products.map((product) => (
                   <tr 
                     key={product.id} 
-                    className="border-b border-red-900/20"
+                    className="border-b border-gray-200 bg-white"
                   >
                     <td className="py-3 px-4">
                       <input
@@ -494,7 +492,7 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
                             p.id === product.id ? { ...p, name: e.target.value } : p
                           ));
                         }}
-                        className="bg-transparent border-none text-white focus:outline-none w-full"
+                        className="bg-transparent border-none text-gray-900 focus:outline-none w-full"
                         placeholder="Enter product name"
                       />
                     </td>
@@ -503,14 +501,14 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
                         type="number"
                         value={product.quantity}
                         onChange={(e) => handleProductQuantityChange(product.id, e.target.value)}
-                        className="bg-transparent border-none text-white text-right focus:outline-none w-full"
+                        className="bg-transparent border-none text-gray-900 text-right focus:outline-none w-full"
                         min="0"
                       />
                     </td>
                     <td className="py-3 px-4 text-center">
                       <button
                         onClick={() => removeProduct(product.id)}
-                        className="text-red-500 hover:text-red-400 transition"
+                        className="text-red-600 hover:text-red-700 transition"
                       >
                         <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -522,10 +520,10 @@ export default function NewReceiptForm({ operationId: propOperationId, isEditMod
                 
                 {/* Add New Product Row */}
                 <tr>
-                  <td colSpan="3" className="py-4 px-4">
+                  <td colSpan="3" className="py-4 px-4 bg-gray-50">
                     <button
                       onClick={addNewProduct}
-                      className="text-red-500 hover:text-red-400 transition text-sm flex items-center gap-2"
+                      className="text-purple-600 hover:text-purple-700 transition text-sm flex items-center gap-2 font-medium"
                     >
                       <span className="text-xl">+</span>
                       New Product

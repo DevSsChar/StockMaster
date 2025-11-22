@@ -45,52 +45,35 @@ export default function DeliveryKanban({ deliveries }) {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-4 gap-6 h-full">
       {statuses.map((status) => {
         const statusDeliveries = getDeliveriesByStatus(status);
         
         return (
-          <div key={status} className="flex flex-col">
-            {/* Column Header */}
-            <div className="bg-red-900/30 border border-red-700 rounded-t-lg p-3 mb-2">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-white">{status}</h3>
-                <span className={`${getStatusBadgeColor(status)} text-xs px-2 py-1 rounded-full font-medium`}>
-                  {statusDeliveries.length}
-                </span>
-              </div>
+          <div key={status} className="flex flex-col bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase">{status}</h3>
+              <span className="bg-gray-200 text-gray-700 text-xs font-semibold px-2 py-1 rounded-full">
+                {statusDeliveries.length}
+              </span>
             </div>
 
-            {/* Cards Container */}
-            <div className="flex-1 space-y-3 min-h-[300px]">
+            <div className="space-y-3 overflow-auto">
               {statusDeliveries.length > 0 ? (
                 statusDeliveries.map((delivery) => (
                   <div
                     key={delivery._id || delivery.id}
-                    className={`border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition ${getStatusColor(status)}`}
+                    className="bg-white p-4 rounded-lg border-l-4 border-red-500 shadow-sm hover:shadow-md transition-all cursor-pointer"
                     onClick={() => handleCardClick(delivery._id || delivery.id)}
                   >
-                    <h4 className="font-semibold text-white mb-2 hover:text-red-400">{delivery.reference}</h4>
-                    
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">From:</span>
-                        <span className="text-white">{delivery.from}</span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">To:</span>
-                        <span className="text-white">{delivery.to}</span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Contact:</span>
-                        <span className="text-red-400">{delivery.contact}</span>
-                      </div>
-                      
-                      <div className="flex justify-between mt-2 pt-2 border-t border-white/10">
-                        <span className="text-gray-400">Scheduled:</span>
-                        <span className="text-white">
+                    <div className="font-semibold text-sm text-gray-900 mb-2">{delivery.reference}</div>
+                    <div className="text-xs text-gray-600 space-y-1">
+                      <div><span className="font-semibold">From:</span> {delivery.from}</div>
+                      <div><span className="font-semibold">To:</span> {delivery.to}</div>
+                      <div><span className="font-semibold">Contact:</span> {delivery.contact}</div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-gray-500">Scheduled:</span>
+                        <span className="text-gray-500">
                           {new Date(delivery.scheduleDate).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -102,8 +85,8 @@ export default function DeliveryKanban({ deliveries }) {
                   </div>
                 ))
               ) : (
-                <div className="border-2 border-dashed border-red-900/30 rounded-lg p-6 text-center">
-                  <p className="text-gray-500 text-sm">No deliveries</p>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <p className="text-gray-400 text-sm">No deliveries</p>
                 </div>
               )}
             </div>

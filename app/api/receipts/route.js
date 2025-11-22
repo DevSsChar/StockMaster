@@ -73,7 +73,18 @@ export async function POST(request) {
     const body = await request.json();
     const { receiveFrom, responsible, scheduleDate, products, status } = body;
 
-    // Generate reference number
+    // Get main warehouse as destination location
+    const Warehouse = (await import("@/models/Warehouse")).default;
+    const destWarehouse = await Warehouse.findOne().sort({ createdAt: 1 });
+    
+    if (!destWarehouse) {
+      return NextResponse.json(
+        { error: "No warehouse found. Please create a warehouse first." },
+        { status: 404 }
+      );
+    }
+
+    // Generate reference number for receipts (always WH/IN)
     const lastReceipt = await Operation.findOne({ type: "receipt" })
       .sort({ createdAt: -1 });
     
@@ -87,7 +98,6 @@ export async function POST(request) {
     const reference = `WH/IN/${String(referenceNumber).padStart(4, '0')}`;
 
     // Transform products to operation lines
-    // Only include products that have a valid productId to avoid validation errors
     const lines = products
       .filter(p => p.name && p.quantity > 0 && p.productId)
       .map(p => ({
@@ -96,12 +106,14 @@ export async function POST(request) {
       }));
 
     // Create new receipt operation
+    // Source: external (receiveFrom field)
+    // Destination: main warehouse
     const newReceipt = await Operation.create({
       reference,
       type: "receipt",
       status: status || "draft",
-      sourceLocation: null, // Can be populated if needed
-      destLocation: null, // Can be populated if needed
+      sourceLocation: null, // External source - no location reference
+      destLocation: destWarehouse._id,
       receiveFrom: receiveFrom || null,
       responsible: responsible || null,
       lines,

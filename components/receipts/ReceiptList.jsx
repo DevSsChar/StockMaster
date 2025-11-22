@@ -23,16 +23,16 @@ export default function ReceiptList({ receipts }) {
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-red-900/50">
-            <th className="text-left py-3 px-4 text-red-500 font-semibold">Reference</th>
-            <th className="text-left py-3 px-4 text-red-500 font-semibold">From</th>
-            <th className="text-left py-3 px-4 text-red-500 font-semibold">To</th>
-            <th className="text-left py-3 px-4 text-red-500 font-semibold">Contact</th>
-            <th className="text-left py-3 px-4 text-red-500 font-semibold">Schedule Date</th>
-            <th className="text-left py-3 px-4 text-red-500 font-semibold">Status</th>
+          <tr className="bg-gray-50 border-b border-gray-200">
+            <th className="text-left py-3 px-6 text-xs font-semibold text-gray-600 uppercase">Reference</th>
+            <th className="text-left py-3 px-6 text-xs font-semibold text-gray-600 uppercase">From</th>
+            <th className="text-left py-3 px-6 text-xs font-semibold text-gray-600 uppercase">To</th>
+            <th className="text-left py-3 px-6 text-xs font-semibold text-gray-600 uppercase">Contact</th>
+            <th className="text-left py-3 px-6 text-xs font-semibold text-gray-600 uppercase">Schedule Date</th>
+            <th className="text-left py-3 px-6 text-xs font-semibold text-gray-600 uppercase">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -40,22 +40,32 @@ export default function ReceiptList({ receipts }) {
             receipts.map((receipt) => (
               <tr 
                 key={receipt._id || receipt.id} 
-                className="border-b border-red-900/20 hover:bg-red-900/10 transition cursor-pointer"
+                className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                 onClick={() => handleRowClick(receipt._id || receipt.id)}
               >
-                <td className="py-3 px-4 text-white font-semibold hover:text-red-400">{receipt.reference}</td>
-                <td className="py-3 px-4 text-gray-300">{receipt.from}</td>
-                <td className="py-3 px-4 text-gray-300">{receipt.to}</td>
-                <td className="py-3 px-4 text-red-400">{receipt.contact}</td>
-                <td className="py-3 px-4 text-gray-300">
+                <td className="py-3 px-6 text-sm font-semibold text-gray-900">{receipt.reference}</td>
+                <td className="py-3 px-6 text-sm text-gray-700">{receipt.from}</td>
+                <td className="py-3 px-6 text-sm text-gray-700">{receipt.to}</td>
+                <td className="py-3 px-6 text-sm font-medium text-gray-700">{receipt.contact}</td>
+                <td className="py-3 px-6 text-sm text-gray-600">
                   {new Date(receipt.scheduleDate).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric'
                   })}
                 </td>
-                <td className={`py-3 px-4 font-semibold ${getStatusColor(receipt.status)}`}>
-                  {receipt.status}
+                <td className="py-3 px-6">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                    receipt.status === 'Done' 
+                      ? 'bg-green-100 text-green-700' 
+                      : receipt.status === 'Ready'
+                      ? 'bg-orange-100 text-orange-700'
+                      : receipt.status === 'Draft'
+                      ? 'bg-gray-100 text-gray-700'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {receipt.status}
+                  </span>
                 </td>
               </tr>
             ))
@@ -71,12 +81,6 @@ export default function ReceiptList({ receipts }) {
           )}
         </tbody>
       </table>
-
-      {receipts.length > 0 && (
-        <div className="mt-6 text-center text-red-500/70">
-          <p className="text-sm">Populate all work orders added to manufacturing order</p>
-        </div>
-      )}
     </div>
   );
 }

@@ -28,8 +28,13 @@ const operationSchema = new Schema(
     },
     type: {
       type: String,
-      enum: ["receipt", "delivery", "internal", "adjustment"],
+      enum: ["receipt", "delivery", "adjustment"],
       required: true,
+    },
+    operationType: {
+      type: String,
+      enum: ["internal", "external"],
+      // Only required for delivery operations
     },
     partner: {
       type: String,

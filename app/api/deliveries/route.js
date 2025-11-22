@@ -71,29 +71,62 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { deliveryAddress, responsible, scheduleDate, operationType, products, status } = body;
+    const { deliveryAddress, responsible, scheduleDate, operationType, products, status, destWarehouseId } = body;
 
-    // Determine reference prefix based on operation type
-    const refPrefix = operationType === 'IN' ? 'WH/IN' : 'WH/OUT';
-    const refPattern = operationType === 'IN' ? /WH\/IN\/(\d+)/ : /WH\/OUT\/(\d+)/;
+    // Validate operation type for deliveries
+    if (!operationType || !['internal', 'external'].includes(operationType)) {
+      return NextResponse.json(
+        { error: "Operation type must be 'internal' or 'external'" },
+        { status: 400 }
+      );
+    }
 
-    // Generate reference number based on operation type
+    // Get main warehouse as source location
+    const Warehouse = (await import("@/models/Warehouse")).default;
+    const sourceWarehouse = await Warehouse.findOne().sort({ createdAt: 1 });
+    
+    if (!sourceWarehouse) {
+      return NextResponse.json(
+        { error: "No warehouse found. Please create a warehouse first." },
+        { status: 404 }
+      );
+    }
+
+    // For internal operations, validate destination warehouse
+    let destLocation = null;
+    if (operationType === 'internal') {
+      if (!destWarehouseId) {
+        return NextResponse.json(
+          { error: "Destination warehouse is required for internal transfers" },
+          { status: 400 }
+        );
+      }
+      const destWarehouse = await Warehouse.findById(destWarehouseId);
+      if (!destWarehouse) {
+        return NextResponse.json(
+          { error: "Destination warehouse not found" },
+          { status: 404 }
+        );
+      }
+      destLocation = destWarehouseId;
+    }
+
+    // Generate reference number for deliveries (always WH/OUT)
     const lastDelivery = await Operation.findOne({ 
       type: "delivery",
-      reference: { $regex: `^${refPrefix}` }
+      reference: { $regex: `^WH/OUT` }
     }).sort({ createdAt: -1 });
     
     let referenceNumber = 1;
     if (lastDelivery && lastDelivery.reference) {
-      const match = lastDelivery.reference.match(refPattern);
+      const match = lastDelivery.reference.match(/WH\/OUT\/(\d+)/);
       if (match) {
         referenceNumber = parseInt(match[1]) + 1;
       }
     }
-    const reference = `${refPrefix}/${String(referenceNumber).padStart(4, '0')}`;
+    const reference = `WH/OUT/${String(referenceNumber).padStart(4, '0')}`;
 
     // Transform products to operation lines
-    // Only include products that have a valid productId to avoid validation errors
     const lines = products
       .filter(p => p.name && p.quantity > 0 && p.productId)
       .map(p => ({
@@ -105,10 +138,11 @@ export async function POST(request) {
     const newDelivery = await Operation.create({
       reference,
       type: "delivery",
+      operationType,
       status: status || "draft",
-      sourceLocation: null, // Can be populated if needed
-      destLocation: null, // Can be populated if needed
-      deliveryAddress: deliveryAddress || null,
+      sourceLocation: sourceWarehouse._id,
+      destLocation: destLocation,
+      deliveryAddress: operationType === 'external' ? (deliveryAddress || null) : null,
       responsible: responsible || null,
       lines,
       scheduledDate: scheduleDate ? new Date(scheduleDate) : new Date(),
