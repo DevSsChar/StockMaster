@@ -28,7 +28,7 @@ const operationSchema = new Schema(
     },
     type: {
       type: String,
-      enum: ["receipt", "delivery", "internal"],
+      enum: ["receipt", "delivery", "internal", "adjustment"],
       required: true,
     },
     partner: {

@@ -9,64 +9,51 @@ const MoveHistory = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState('list')
 
-  useEffect(() => {
-    setTimeout(() => {
-      setOperations([
-        {
-          reference: 'WH/IN/0001',
-          contact: 'Azure Interior',
-          from: 'Vendors',
-          to: 'WH/Stock',
-          status: 'Ready',
-          type: 'receipt',
-          products: ['Laptop Dell XPS 15', 'Wireless Mouse']
-        },
-        {
-          reference: 'WH/IN/0002',
-          contact: 'TechSupply Ltd',
-          from: 'Vendors',
-          to: 'WH/Stock',
-          status: 'Done',
-          type: 'receipt',
-          products: ['Mechanical Keyboard']
-        },
-        {
-          reference: 'WH/OUT/0001',
-          contact: 'Customer A',
-          from: 'WH/Stock',
-          to: 'Customers',
-          status: 'Done',
-          type: 'delivery',
-          products: ['Monitor 27"', 'HDMI Cable', 'USB-C Adapter']
-        },
-        {
-          reference: 'WH/OUT/0002',
-          contact: 'Customer B',
-          from: 'WH/Stock',
-          to: 'Customers',
-          status: 'Waiting',
-          type: 'delivery',
-          products: ['Wireless Headset']
-        },
-        {
-          reference: 'WH/INT/0001',
-          contact: 'Internal',
-          from: 'WH/Stock',
-          to: 'Production',
-          status: 'Ready',
-          type: 'internal',
-          products: ['Component A', 'Component B']
-        }
-      ])
+  // Fetch operations from API
+  const fetchOperations = async () => {
+    try {
+      setLoading(true)
+      const url = filter === 'all' 
+        ? '/api/operations' 
+        : `/api/operations?type=${filter}`
+      
+      const response = await fetch(url)
+      const result = await response.json()
+
+      if (result.success && result.data) {
+        // Transform API data to match component structure
+        const transformedOps = result.data.map(op => ({
+          reference: op.reference,
+          contact: op.partner || 'N/A',
+          from: op.sourceLocation?.name || 'N/A',
+          to: op.destLocation?.name || 'N/A',
+          status: op.status.charAt(0).toUpperCase() + op.status.slice(1),
+          type: op.type,
+          lines: op.lines || [],
+          products: op.lines?.map(line => ({
+            name: line.product?.name || 'Unknown Product',
+            quantity: line.quantity || 0
+          })) || []
+        }))
+        setOperations(transformedOps)
+      }
+    } catch (error) {
+      console.error('Error fetching operations:', error)
+      setOperations([])
+    } finally {
       setLoading(false)
-    }, 500)
-  }, [])
+    }
+  }
+
+  useEffect(() => {
+    fetchOperations()
+  }, [filter])
 
   // Expand operations with multiple products into multiple rows
   const expandedOperations = operations.flatMap(op => 
     op.products && op.products.length > 0
-      ? op.products.map(product => ({ ...op, product }))
-      : [{ ...op, product: null }]
+      ? op.products.map(product => ({ ...op, product: product.name, quantity: product.quantity }))
+      : [{ ...op, product: null, quantity: 0 }]
   )
 
   // Filter by type and search query
@@ -145,7 +132,10 @@ const MoveHistory = () => {
             </button>
 
             {/* NEW Button */}
-            <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition-all">
+            <button 
+              onClick={() => window.location.href = '/inventory/operations/new'}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition-all"
+            >
               NEW
             </button>
           </div>
@@ -165,6 +155,7 @@ const MoveHistory = () => {
                   <th className="text-left py-3 px-6 text-xs font-semibold text-gray-600 uppercase">Product</th>
                   <th className="text-left py-3 px-6 text-xs font-semibold text-gray-600 uppercase">From</th>
                   <th className="text-left py-3 px-6 text-xs font-semibold text-gray-600 uppercase">To</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-600 uppercase">Quantity</th>
                   <th className="text-left py-3 px-6 text-xs font-semibold text-gray-600 uppercase">Status</th>
                 </tr>
               </thead>
@@ -177,7 +168,7 @@ const MoveHistory = () => {
                     <tr
                       key={`${operation.reference}-${idx}`}
                       className={`border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
-                        isInMove ? 'bg-green-50/20' : isOutMove ? 'bg-red-50/20' : ''
+                        isInMove ? 'bg-green-50' : isOutMove ? 'bg-red-50' : ''
                       }`}
                     >
                       <td className="py-3 px-6">
@@ -185,19 +176,36 @@ const MoveHistory = () => {
                           <span className={`w-2 h-2 rounded-full ${
                             isInMove ? 'bg-green-500' : isOutMove ? 'bg-red-500' : 'bg-blue-500'
                           }`}></span>
-                          <span className="text-sm font-semibold text-gray-900">{operation.reference}</span>
+                          <span className={`text-sm font-semibold ${
+                            isInMove ? 'text-green-700' : isOutMove ? 'text-red-700' : 'text-gray-900'
+                          }`}>{operation.reference}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-6 text-sm text-gray-700">{operation.contact}</td>
-                      <td className="py-3 px-6 text-sm text-gray-700">{operation.product || 'N/A'}</td>
-                      <td className="py-3 px-6 text-sm text-gray-600">{operation.from}</td>
-                      <td className="py-3 px-6 text-sm text-gray-600">{operation.to}</td>
+                      <td className={`py-3 px-6 text-sm font-medium ${
+                        isInMove ? 'text-green-700' : isOutMove ? 'text-red-700' : 'text-gray-700'
+                      }`}>{operation.contact}</td>
+                      <td className={`py-3 px-6 text-sm ${
+                        isInMove ? 'text-green-600' : isOutMove ? 'text-red-600' : 'text-gray-700'
+                      }`}>{operation.product || 'N/A'}</td>
+                      <td className={`py-3 px-6 text-sm ${
+                        isInMove ? 'text-green-600' : isOutMove ? 'text-red-600' : 'text-gray-600'
+                      }`}>{operation.from}</td>
+                      <td className={`py-3 px-6 text-sm ${
+                        isInMove ? 'text-green-600' : isOutMove ? 'text-red-600' : 'text-gray-600'
+                      }`}>{operation.to}</td>
+                      <td className={`py-3 px-6 text-sm font-semibold ${
+                        isInMove ? 'text-green-700' : isOutMove ? 'text-red-700' : 'text-gray-900'
+                      }`}>{operation.quantity || 0}</td>
                       <td className="py-3 px-6">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                           operation.status === 'Done' 
                             ? 'bg-green-100 text-green-700' 
                             : operation.status === 'Ready'
                             ? 'bg-orange-100 text-orange-700'
+                            : operation.status === 'Draft'
+                            ? 'bg-gray-100 text-gray-700'
+                            : operation.status === 'Cancelled'
+                            ? 'bg-red-100 text-red-700'
                             : 'bg-yellow-100 text-yellow-700'
                         }`}>
                           {operation.status}
@@ -211,8 +219,8 @@ const MoveHistory = () => {
           </div>
         ) : (
           /* Kanban View */
-          <div className="grid grid-cols-3 gap-6 h-full">
-            {['Waiting', 'Ready', 'Done'].map(status => {
+          <div className="grid grid-cols-4 gap-6 h-full">
+            {['Draft', 'Ready', 'Done', 'Cancelled'].map(status => {
               const statusOps = filteredOperations.filter(op => op.status === status)
               return (
                 <div key={status} className="flex flex-col bg-gray-50 rounded-lg p-4">
@@ -238,6 +246,7 @@ const MoveHistory = () => {
                           <div className="text-xs text-gray-600 space-y-1">
                             <div><span className="font-semibold">Contact:</span> {operation.contact}</div>
                             <div><span className="font-semibold">Product:</span> {operation.product || 'N/A'}</div>
+                            <div><span className="font-semibold">Quantity:</span> {operation.quantity || 0}</div>
                             <div className="flex items-center gap-2 mt-2">
                               <span className="text-gray-500">{operation.from}</span>
                               <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
