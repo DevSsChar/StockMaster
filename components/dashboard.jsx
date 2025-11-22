@@ -92,7 +92,11 @@ export default function Dashboard() {
         <div className="max-w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* Receipt Card */}
-          <div className="bg-white border-2 border-red-500/50 rounded-3xl p-12 flex flex-col shadow-md" style={{height: '50vh'}}>
+          <div 
+            onClick={() => router.push('/receipts')}
+            className="bg-white border-2 border-red-500/50 rounded-3xl p-12 flex flex-col shadow-md cursor-pointer hover:border-red-500 hover:shadow-lg transition-all" 
+            style={{height: '50vh'}}
+          >
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-3xl font-bold text-red-600 mb-6">{receiptData.title}</h2>
@@ -139,7 +143,11 @@ export default function Dashboard() {
           </div>
 
           {/* Delivery Card */}
-          <div className="bg-white border-2 border-red-500/50 rounded-3xl p-12 flex flex-col shadow-md" style={{height: '50vh'}}>
+          <div 
+            onClick={() => router.push('/delivery')}
+            className="bg-white border-2 border-red-500/50 rounded-3xl p-12 flex flex-col shadow-md cursor-pointer hover:border-red-500 hover:shadow-lg transition-all" 
+            style={{height: '50vh'}}
+          >
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-3xl font-bold text-red-600 mb-6">{deliveryData.title}</h2>
