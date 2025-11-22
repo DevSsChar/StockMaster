@@ -24,9 +24,5 @@ export default function DashboardPage() {
 
   if (status === "unauthenticated") return null; // prevent flicker
 
-  return (
-    <div className="flex w-full h-screen justify-center items-center">
-      <Dashboard />
-    </div>
-  );
+  return <Dashboard />;
 }
