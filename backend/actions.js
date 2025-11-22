@@ -130,11 +130,15 @@ export async function getWarehouses() {
 export async function createLocation(formData) {
   try {
     const name = getField(formData, "name")?.toString().trim();
-    const address = getField(formData, "address")?.toString().trim() || undefined;
+    const shortCode = getField(formData, "shortCode")?.toString().trim();
     const warehouseId = toObjectId(getField(formData, "warehouse"));
 
     if (!name) {
       return { error: "Location name is required" };
+    }
+
+    if (!shortCode) {
+      return { error: "Location short code is required" };
     }
 
     if (!warehouseId) {
@@ -145,8 +149,8 @@ export async function createLocation(formData) {
 
     await Location.create({
       name,
+      shortCode: shortCode.toUpperCase(),
       warehouse: warehouseId,
-      address,
     });
 
     revalidatePath("/inventory/locations");
