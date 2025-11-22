@@ -30,13 +30,16 @@ export default function ReceiptOperations() {
 
       // Transform API data to match UI format
       const transformedReceipts = data.data.map((receipt) => ({
+        _id: receipt._id,
         id: receipt._id,
         reference: receipt.reference,
-        from: receipt.sourceLocation?.name || 'vendor',
-        to: receipt.destLocation?.name || 'WH/Stock1',
-        contact: 'Contact', // You can add contact field to your model
+        from: receipt.receiveFrom || receipt.sourceLocation?.name || 'N/A',
+        to: receipt.destLocation?.name || 'Warehouse',
+        contact: receipt.responsible || 'N/A',
         scheduleDate: receipt.scheduledDate,
-        status: receipt.status.charAt(0).toUpperCase() + receipt.status.slice(1),
+        status: receipt.status === 'ready' ? 'Ready' : 
+                receipt.status === 'done' ? 'Done' :
+                receipt.status === 'draft' ? 'Draft' : 'Draft',
       }));
 
       setReceipts(transformedReceipts);

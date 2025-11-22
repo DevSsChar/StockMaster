@@ -18,7 +18,7 @@ export async function GET(request, { params }) {
 
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     const delivery = await Operation.findById(id)
       .populate("sourceLocation")
@@ -59,7 +59,7 @@ export async function PATCH(request, { params }) {
 
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { status, formData, products } = body;
 
@@ -81,16 +81,24 @@ export async function PATCH(request, { params }) {
     // Update products if provided
     if (products && Array.isArray(products)) {
       operation.lines = products
-        .filter(p => p.name && p.quantity > 0)
+        .filter(p => p.name && p.quantity > 0 && p.productId)
         .map(p => ({
-          product: p.productId || null,
+          product: p.productId,
           quantity: p.quantity,
         }));
     }
 
-    // Update scheduled date if provided
-    if (formData?.scheduleDate) {
-      operation.scheduledDate = new Date(formData.scheduleDate);
+    // Update form data fields if provided
+    if (formData) {
+      if (formData.scheduleDate) {
+        operation.scheduledDate = new Date(formData.scheduleDate);
+      }
+      if (formData.deliveryAddress !== undefined) {
+        operation.deliveryAddress = formData.deliveryAddress || null;
+      }
+      if (formData.responsible !== undefined) {
+        operation.responsible = formData.responsible || null;
+      }
     }
 
     await operation.save();

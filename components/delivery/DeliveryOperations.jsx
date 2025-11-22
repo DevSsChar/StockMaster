@@ -30,13 +30,17 @@ export default function DeliveryOperations() {
 
       // Transform API data to match UI format
       const transformedDeliveries = data.data.map((delivery) => ({
+        _id: delivery._id,
         id: delivery._id,
         reference: delivery.reference,
-        from: delivery.sourceLocation?.name || 'WH/Stock1',
-        to: delivery.destLocation?.name || 'vendor',
-        contact: 'Contact', // You can add contact field to your model
+        from: delivery.sourceLocation?.name || 'Warehouse',
+        to: delivery.deliveryAddress || delivery.destLocation?.name || 'N/A',
+        contact: delivery.responsible || 'N/A',
         scheduleDate: delivery.scheduledDate,
-        status: delivery.status.charAt(0).toUpperCase() + delivery.status.slice(1),
+        status: delivery.status === 'ready' ? 'Ready' : 
+                delivery.status === 'waiting' ? 'Waiting' :
+                delivery.status === 'done' ? 'Done' :
+                delivery.status === 'draft' ? 'Draft' : 'Draft',
       }));
 
       setDeliveries(transformedDeliveries);
@@ -72,7 +76,7 @@ export default function DeliveryOperations() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="min-h-screen bg-black text-white p-6 py-20">
       {/* Header Section */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">

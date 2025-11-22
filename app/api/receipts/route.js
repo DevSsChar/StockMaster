@@ -102,6 +102,8 @@ export async function POST(request) {
       status: status || "draft",
       sourceLocation: null, // Can be populated if needed
       destLocation: null, // Can be populated if needed
+      receiveFrom: receiveFrom || null,
+      responsible: responsible || null,
       lines,
       scheduledDate: scheduleDate ? new Date(scheduleDate) : new Date(),
     });

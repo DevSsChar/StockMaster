@@ -14,7 +14,7 @@ export default function UniversalNavbar() {
   const navigationTabs = [
     { name: "Dashboard", href: "/dashboard", icon: "dashboard" },
     { name: "Operations", href: "/operations", icon: "operations" },
-    { name: "Products", href: "/products", icon: "products" },
+    { name: "Stocks", href: "/stock", icon: "products" },
     { name: "Move History", href: "/history", icon: "history" },
     { name: "Settings", href: "/settings", icon: "settings" },
   ];

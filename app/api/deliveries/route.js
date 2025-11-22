@@ -73,18 +73,24 @@ export async function POST(request) {
     const body = await request.json();
     const { deliveryAddress, responsible, scheduleDate, operationType, products, status } = body;
 
-    // Generate reference number
-    const lastDelivery = await Operation.findOne({ type: "delivery" })
-      .sort({ createdAt: -1 });
+    // Determine reference prefix based on operation type
+    const refPrefix = operationType === 'IN' ? 'WH/IN' : 'WH/OUT';
+    const refPattern = operationType === 'IN' ? /WH\/IN\/(\d+)/ : /WH\/OUT\/(\d+)/;
+
+    // Generate reference number based on operation type
+    const lastDelivery = await Operation.findOne({ 
+      type: "delivery",
+      reference: { $regex: `^${refPrefix}` }
+    }).sort({ createdAt: -1 });
     
     let referenceNumber = 1;
     if (lastDelivery && lastDelivery.reference) {
-      const match = lastDelivery.reference.match(/WH\/OUT\/(\d+)/);
+      const match = lastDelivery.reference.match(refPattern);
       if (match) {
         referenceNumber = parseInt(match[1]) + 1;
       }
     }
-    const reference = `WH/OUT/${String(referenceNumber).padStart(4, '0')}`;
+    const reference = `${refPrefix}/${String(referenceNumber).padStart(4, '0')}`;
 
     // Transform products to operation lines
     // Only include products that have a valid productId to avoid validation errors
@@ -102,6 +108,8 @@ export async function POST(request) {
       status: status || "draft",
       sourceLocation: null, // Can be populated if needed
       destLocation: null, // Can be populated if needed
+      deliveryAddress: deliveryAddress || null,
+      responsible: responsible || null,
       lines,
       scheduledDate: scheduleDate ? new Date(scheduleDate) : new Date(),
     });

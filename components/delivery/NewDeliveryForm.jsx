@@ -553,10 +553,9 @@ export default function NewDeliveryForm({ operationId: propOperationId, isEditMo
               className="w-full bg-black border-b border-red-700 py-2 text-white focus:outline-none focus:border-red-500"
             >
               <option value="">Select operation type</option>
-              <option value="delivery">Delivery</option>
-              <option value="receipt">Receipt</option>
-              <option value="internal">Internal Transfer</option>
-              <option value="return">Return</option>
+              <option value="IN">IN</option>
+              <option value="OUT">OUT</option>
+              
             </select>
           </div>
         </div>
